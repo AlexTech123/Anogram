@@ -102,6 +102,10 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     <button
       onClick={onClick}
       onMouseDown={e => e.preventDefault()}
+      // On mobile, touchend fires before click — stop propagation so
+      // the parent's swipe handler doesn't consume the event, then
+      // fire onClick manually so the action actually runs.
+      onTouchEnd={e => { e.stopPropagation(); onClick(e); }}
       className="flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-200"
       style={{
         width: 28, height: 28,
