@@ -160,19 +160,20 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
             Other:  bubble | fixed-slot (reply)
           */}
 
-          {/* LEFT slot for mine — fixed 28px, both buttons stacked absolutely */}
+          {/* LEFT slot for mine — fixed 28px, both buttons stacked absolutely.
+              Delete is rendered FIRST (lower z), Reply SECOND (higher z, clickable on top) */}
           {isMine && (
             <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0, alignSelf: "center" }}>
-              <div style={{ position: "absolute", inset: 0 }}>
-                <ActionBtn show={showReply} onClick={handleReplyClick}
-                  color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
-                  <ReplyIcon />
-                </ActionBtn>
-              </div>
-              <div style={{ position: "absolute", inset: 0 }}>
+              <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
                 <ActionBtn show={showDelete} onClick={handleDelete}
                   color="rgba(239,68,68,.85)" shadow="0 2px 10px rgba(239,68,68,.4)">
                   <DeleteIcon />
+                </ActionBtn>
+              </div>
+              <div style={{ position: "absolute", inset: 0, zIndex: 2 }}>
+                <ActionBtn show={showReply} onClick={handleReplyClick}
+                  color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
+                  <ReplyIcon />
                 </ActionBtn>
               </div>
             </div>
