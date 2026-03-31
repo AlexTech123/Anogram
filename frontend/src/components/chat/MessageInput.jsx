@@ -13,7 +13,6 @@ export default function MessageInput() {
     setText("");
     if (ref.current) {
       ref.current.style.height = "auto";
-      // Keep focus so keyboard stays open on mobile
       ref.current.focus();
     }
   };
@@ -33,19 +32,31 @@ export default function MessageInput() {
   const hasText = text.trim().length > 0;
 
   return (
-    <div className="flex-shrink-0 flex items-end gap-2 px-3 py-2"
+    <div className="flex-shrink-0 flex items-end gap-2.5 px-3 py-3"
       style={{
         background: "var(--bg-sidebar)",
         borderTop: "1px solid var(--border)",
-        paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
+        paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
       }}>
-      <div className="flex-1 flex items-end rounded-2xl px-3 py-2"
-        style={{ background: "var(--bg-elevated)", minHeight: 40 }}>
+
+      {/* Input field */}
+      <div
+        className="flex-1 flex items-end rounded-2xl px-4 py-2.5 transition-all duration-200"
+        style={{ background: "var(--bg-elevated)", border: "1.5px solid var(--border)" }}
+        onFocusCapture={e => {
+          e.currentTarget.style.borderColor = "var(--accent)";
+          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(124,111,255,.12)";
+        }}
+        onBlurCapture={e => {
+          e.currentTarget.style.borderColor = "var(--border)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
         <textarea
           ref={ref}
           className="flex-1 bg-transparent text-sm resize-none outline-none leading-relaxed"
-          style={{ color: "var(--text-primary)", minHeight: 24, maxHeight: 120 }}
-          placeholder="Message"
+          style={{ color: "var(--text-primary)", minHeight: 22, maxHeight: 120 }}
+          placeholder="Message…"
           rows={1}
           value={text}
           onInput={onInput}
@@ -53,16 +64,19 @@ export default function MessageInput() {
           onKeyDown={onKey}
         />
       </div>
+
+      {/* Send button */}
       <button
         onClick={send}
         disabled={!hasText}
-        className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90"
-        style={hasText
-          ? { background: "var(--accent)", boxShadow: "0 2px 12px rgba(42,171,238,.4)" }
-          : { background: "var(--bg-elevated)", opacity: .4 }
-        }
-        // prevent button from stealing focus from textarea
         onMouseDown={e => e.preventDefault()}
+        className="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-90"
+        style={hasText
+          ? { background: "var(--accent-gradient)", boxShadow: "0 4px 16px rgba(99,102,241,.5)", transform: "scale(1)" }
+          : { background: "var(--bg-elevated)", opacity: .35 }
+        }
+        onMouseEnter={e => { if (hasText) e.currentTarget.style.transform = "scale(1.08)"; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" style={{ transform: "translateX(1px)" }}>
           <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>

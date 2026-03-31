@@ -3,27 +3,24 @@
 @tailwind utilities;
 
 :root {
-  /* Telegram dark palette */
-  --bg-base:        #0e1621;
-  --bg-sidebar:     #17212b;
-  --bg-card:        #1c2733;
-  --bg-elevated:    #242f3d;
-  --bg-input:       #17212b;
-  --bg-hover:       #202e3d;
-  --bg-active:      #2b5278;
-  --msg-out:        #2b5278;
-  --msg-out-darker: #245069;
-  --msg-in:         #182533;
-  --accent:         #2aabee;
-  --accent-dark:    #1a8fc3;
-  --accent-gradient: linear-gradient(180deg, #2aabee 0%, #1a8fc3 100%);
-  --text-primary:   #ffffff;
-  --text-secondary: #aabbc9;
-  --text-muted:     #6c7f8f;
-  --border:         #0d1723;
-  --online:         #4dcd5e;
-  --badge:          #2aabee;
-  --danger:         #e53935;
+  --bg-base:        #0a0d1a;
+  --bg-sidebar:     #0d1121;
+  --bg-card:        #111627;
+  --bg-elevated:    #17203a;
+  --bg-input:       #131928;
+  --bg-hover:       #1c2540;
+  --bg-active:      #1e1a4a;
+  --msg-out-from:   #5b4cdb;
+  --msg-out-to:     #8b5cf6;
+  --msg-in:         #161d36;
+  --accent:         #7c6fff;
+  --accent-light:   #a78bfa;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --text-primary:   #eef2ff;
+  --text-secondary: #8896b8;
+  --text-muted:     #404f72;
+  --border:         #1a2340;
+  --online:         #4ade80;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,7 +31,7 @@ html, body, #root {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -43,83 +40,107 @@ body {
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a3f55; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #1e2d50; border-radius: 3px; }
 
-/* ── Animations ─────────────────────────────────────────────────────────── */
-@keyframes fadeIn  { from{opacity:0} to{opacity:1} }
-@keyframes fadeUp  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-@keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-@keyframes pop     { 0%{transform:scale(.95);opacity:0} 60%{transform:scale(1.01)} 100%{transform:scale(1);opacity:1} }
-@keyframes msgIn   { from{opacity:0;transform:translateY(8px) scale(.97)} to{opacity:1;transform:none} }
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+@keyframes fadeIn  { from{opacity:0}               to{opacity:1} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+@keyframes pop     { 0%{transform:scale(.93);opacity:0} 65%{transform:scale(1.02)} 100%{transform:scale(1);opacity:1} }
+@keyframes msgIn   { from{opacity:0;transform:translateY(6px) scale(.98)} to{opacity:1;transform:none} }
+@keyframes glow    { 0%,100%{opacity:.5} 50%{opacity:1} }
 @keyframes bounce-dot {
-  0%,60%,100%{transform:translateY(0);opacity:.6}
-  30%{transform:translateY(-4px);opacity:1}
+  0%,60%,100% { transform:translateY(0); opacity:.6 }
+  30%         { transform:translateY(-4px); opacity:1 }
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .animate-fade-in  { animation: fadeIn  .18s ease forwards; }
-.animate-fade-up  { animation: fadeUp  .2s  ease forwards; }
+.animate-fade-up  { animation: fadeUp  .22s ease forwards; }
 .animate-slide-in { animation: slideIn .2s  ease forwards; }
-.animate-pop      { animation: pop     .22s cubic-bezier(.34,1.56,.64,1) forwards; }
+.animate-slide-up { animation: slideUp .3s  cubic-bezier(.25,.8,.25,1) forwards; }
+.animate-pop      { animation: pop     .25s cubic-bezier(.34,1.56,.64,1) forwards; }
 .animate-msg-in   { animation: msgIn   .2s  cubic-bezier(.25,.8,.25,1) forwards; }
+.animate-spin     { animation: spin    .8s  linear infinite; }
 
-/* ── Shared components ──────────────────────────────────────────────────── */
+/* ── Components ─────────────────────────────────────────────────────────── */
 @layer components {
   .input {
-    @apply w-full rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200;
+    @apply w-full rounded-2xl px-4 py-3 text-sm outline-none transition-all duration-200;
     background: var(--bg-elevated);
     color: var(--text-primary);
-    border: 1px solid transparent;
+    border: 1.5px solid var(--border);
     -webkit-appearance: none;
   }
   .input::placeholder { color: var(--text-muted); }
   .input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(42,171,238,.18);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 3px rgba(124,111,255,.15), 0 0 20px rgba(124,111,255,.08);
   }
 
   .btn-primary {
-    @apply w-full font-semibold py-3 rounded-xl text-sm text-white outline-none transition-all duration-150;
+    @apply w-full font-semibold py-3.5 rounded-2xl text-sm text-white outline-none transition-all duration-200;
     background: var(--accent-gradient);
+    box-shadow: 0 4px 20px rgba(99,102,241,.35);
     -webkit-appearance: none;
   }
   .btn-primary:hover:not(:disabled) {
-    filter: brightness(1.08);
     transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(99,102,241,.5);
+    filter: brightness(1.08);
   }
   .btn-primary:active:not(:disabled) { transform: none; filter: brightness(.95); }
-  .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
 }
 
 textarea { caret-color: var(--accent); }
 textarea::placeholder { color: var(--text-muted); }
 
-/* ── Telegram message bubble tails ──────────────────────────────────────── */
+/* ── Message bubble tails ───────────────────────────────────────────────── */
 .bubble-out {
   position: relative;
-  background: var(--msg-out);
+  background: linear-gradient(135deg, var(--msg-out-from), var(--msg-out-to));
   color: #fff;
-  border-radius: 12px 12px 2px 12px;
+  border-radius: 18px 18px 4px 18px;
+  box-shadow: 0 4px 20px rgba(91,76,219,.3);
 }
 .bubble-out::after {
   content: "";
   position: absolute;
-  bottom: 0; right: -7px;
-  width: 10px; height: 14px;
-  background: var(--msg-out);
-  clip-path: polygon(0 0, 0 100%, 100% 100%);
+  bottom: 0; right: -6px;
+  border: 7px solid transparent;
+  border-left-color: var(--msg-out-to);
+  border-bottom-color: var(--msg-out-to);
+  border-radius: 0 0 3px 0;
 }
 
 .bubble-in {
   position: relative;
   background: var(--msg-in);
   color: var(--text-primary);
-  border-radius: 12px 12px 12px 2px;
+  border-radius: 18px 18px 18px 4px;
+  border: 1px solid var(--border);
 }
 .bubble-in::before {
   content: "";
   position: absolute;
   bottom: 0; left: -7px;
-  width: 10px; height: 14px;
-  background: var(--msg-in);
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  border: 7px solid transparent;
+  border-right-color: var(--msg-in);
+  border-bottom-color: var(--msg-in);
+  border-radius: 0 0 0 3px;
+}
+
+/* ── Glass card for auth ────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(17, 22, 39, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(124,111,255,.15);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.04) inset,
+    0 32px 64px rgba(0,0,0,.5),
+    0 0 80px rgba(99,102,241,.08);
 }

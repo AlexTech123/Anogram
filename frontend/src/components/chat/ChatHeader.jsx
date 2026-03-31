@@ -32,12 +32,12 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
   };
 
   return (
-    <div className="flex-shrink-0 flex items-center gap-3 px-3"
-      style={{ height: 56, background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}>
+    <div className="flex-shrink-0 flex items-center gap-3 px-4"
+      style={{ height: 58, background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}>
 
       {/* Back — mobile */}
       <button onClick={onBack}
-        className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors active:scale-90"
+        className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
         style={{ color: "var(--text-secondary)" }}
         onMouseEnter={e => e.currentTarget.style.background = "var(--bg-elevated)"}
         onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -51,18 +51,17 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>{name}</p>
         {typingList.length > 0 ? (
-          <div className="flex items-center gap-1">
-            <span className="text-xs" style={{ color: "var(--accent)" }}>typing</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs" style={{ color: "var(--accent-light)" }}>typing</span>
             {[0,1,2].map(i => (
-              <span key={i} className="w-1 h-1 rounded-full" style={{
-                background: "var(--accent)",
+              <span key={i} className="w-1 h-1 rounded-full inline-block" style={{
+                background: "var(--accent-light)",
                 animation: `bounce-dot .9s ease ${i*.18}s infinite`,
-                display: "inline-block"
               }}/>
             ))}
           </div>
         ) : (
-          <p className="text-xs transition-colors duration-300"
+          <p className="text-xs transition-colors duration-500"
             style={{ color: isOnline ? "var(--online)" : "var(--text-muted)" }}>
             {isOnline ? "online" : "offline"}
           </p>
@@ -73,34 +72,32 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
       <div className="relative flex-shrink-0">
         <button
           onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); }}
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+          className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
           style={{ color: "var(--text-secondary)" }}
           onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-        >
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
           <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
-            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+            <circle cx="12" cy="5"  r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
           </svg>
         </button>
 
         {showMenu && (
-          <div
-            className="absolute right-0 top-full mt-1 rounded-xl shadow-2xl z-50 py-1 animate-pop"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--bg-elevated)", minWidth: 170 }}
-            onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}
-          >
-            <button
-              onClick={handleDeleteChat}
-              disabled={deleting}
-              className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors"
-              style={{ color: confirmDelete ? "#fff" : "#ef5350", background: confirmDelete ? "rgba(229,57,53,.7)" : "transparent" }}
-              onMouseEnter={e => { if (!confirmDelete) e.currentTarget.style.background = "rgba(229,57,53,.1)"; }}
-              onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = "transparent"; }}
-            >
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+          <div className="absolute right-0 top-full mt-2 rounded-2xl shadow-2xl z-50 py-1.5 animate-pop"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--bg-elevated)", minWidth: 180 }}
+            onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}>
+            <button onClick={handleDeleteChat} disabled={deleting}
+              className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 rounded-xl mx-1 transition-all"
+              style={{
+                width: "calc(100% - 8px)",
+                color: confirmDelete ? "#fff" : "#f87171",
+                background: confirmDelete ? "rgba(239,68,68,.7)" : "transparent",
+              }}
+              onMouseEnter={e => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,.1)"; }}
+              onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = "transparent"; }}>
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
               </svg>
-              {deleting ? "Deleting…" : confirmDelete ? "Tap again to confirm" : "Delete chat"}
+              {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete chat"}
             </button>
           </div>
         )}

@@ -8,13 +8,11 @@ from app.models.chat_member import ChatMember
 from app.models.user import User
 from app.schemas.chat import ChatCreate, ChatDetailOut, ChatOut
 from app.services.chat_service import (
-    _build_chat_out,
-    add_member,
-    create_chat,
-    get_chat_or_403,
-    get_user_chats,
-    remove_member,
+    _build_chat_out, add_member, create_chat,
+    get_chat_or_403, get_user_chats, remove_member,
 )
+from app.core.global_ws_manager import global_manager
+import asyncio
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -36,7 +34,7 @@ def get_chat(chat_id: int, current_user: User = Depends(get_current_user), db: S
 
 
 @router.delete("/{chat_id}", status_code=204)
-def delete_chat(chat_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def delete_chat(chat_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     chat = db.get(Chat, chat_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
@@ -45,8 +43,16 @@ def delete_chat(chat_id: int, current_user: User = Depends(get_current_user), db
     ).first()
     if not member:
         raise HTTPException(status_code=403, detail="Not a member")
+
+    # Collect all member ids before deleting
+    member_ids = [m.user_id for m in db.query(ChatMember).filter(ChatMember.chat_id == chat_id).all()]
+
     db.delete(chat)
     db.commit()
+
+    # Notify all members via global WS
+    for uid in member_ids:
+        await global_manager.notify(uid, {"type": "chat_deleted", "chat_id": chat_id})
 
 
 @router.post("/{chat_id}/members", response_model=ChatDetailOut)

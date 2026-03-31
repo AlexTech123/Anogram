@@ -9,6 +9,7 @@ from app.database import SessionLocal
 from app.models.chat_member import ChatMember
 from app.models.user import User
 from app.services.message_service import save_message
+from app.services.push_service import send_push_to_user
 
 
 async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None:
@@ -28,27 +29,20 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
             await websocket.close(code=4001)
             return
 
-        membership = (
-            db.query(ChatMember)
-            .filter(ChatMember.chat_id == chat_id, ChatMember.user_id == user_id)
-            .first()
-        )
+        membership = db.query(ChatMember).filter(
+            ChatMember.chat_id == chat_id, ChatMember.user_id == user_id
+        ).first()
         if not membership:
             await websocket.close(code=4003)
             return
 
         just_came_online = await manager.connect(websocket, chat_id, user_id)
-
         await manager.send_to(websocket, {
             "type": "online_status",
             "online_user_ids": manager.online_in_chat(chat_id),
         })
-
         if just_came_online:
-            await manager.broadcast(chat_id, {
-                "type": "user_online",
-                "user_id": user_id,
-            }, exclude_ws=websocket)
+            await manager.broadcast(chat_id, {"type": "user_online", "user_id": user_id}, exclude_ws=websocket)
 
         try:
             while True:
@@ -70,17 +64,12 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                         "content": content,
                         "created_at": msg.created_at.isoformat(),
                     }
-
-                    # Broadcast to everyone in the chat WS
                     await manager.broadcast(chat_id, payload_out)
 
-                    # Notify all chat members via global WS
-                    # (covers members not currently viewing this chat)
-                    members = (
-                        db.query(ChatMember)
-                        .filter(ChatMember.chat_id == chat_id)
-                        .all()
-                    )
+                    # Notify all members via global WS + push
+                    members = db.query(ChatMember).filter(ChatMember.chat_id == chat_id).all()
+                    online_now = set(manager.online_in_chat(chat_id))
+
                     for m in members:
                         await global_manager.notify(m.user_id, {
                             "type": "new_message",
@@ -90,6 +79,15 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                             "content": content,
                             "created_at": msg.created_at.isoformat(),
                         })
+                        # Push only to members who are NOT currently viewing the app
+                        if m.user_id != user_id and m.user_id not in global_manager._conns:
+                            send_push_to_user(
+                                db,
+                                m.user_id,
+                                title=f"@{user.username}",
+                                body=content[:100],
+                                data={"chat_id": chat_id},
+                            )
 
                 elif msg_type == "typing":
                     await manager.broadcast(chat_id, {
@@ -102,10 +100,7 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                     message_id = data.get("message_id")
                     if not isinstance(message_id, int):
                         continue
-                    if (
-                        membership.last_read_message_id is None
-                        or message_id > membership.last_read_message_id
-                    ):
+                    if membership.last_read_message_id is None or message_id > membership.last_read_message_id:
                         membership.last_read_message_id = message_id
                         db.commit()
                     await manager.broadcast(chat_id, {
@@ -121,8 +116,5 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
         if user_id is not None:
             went_offline = manager.disconnect(websocket, chat_id, user_id)
             if went_offline:
-                await manager.broadcast(chat_id, {
-                    "type": "user_offline",
-                    "user_id": user_id,
-                })
+                await manager.broadcast(chat_id, {"type": "user_offline", "user_id": user_id})
         db.close()

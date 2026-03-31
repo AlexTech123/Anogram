@@ -2,7 +2,7 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import auth, chats, messages, users
+from app.routers import auth, chats, messages, push, users
 from app.websocket.chat_ws import chat_websocket
 from app.websocket.global_ws import global_websocket
 
@@ -16,14 +16,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api")
-app.include_router(users.router, prefix="/api")
-app.include_router(chats.router, prefix="/api")
+app.include_router(auth.router,     prefix="/api")
+app.include_router(users.router,    prefix="/api")
+app.include_router(chats.router,    prefix="/api")
 app.include_router(messages.router, prefix="/api")
+app.include_router(push.router,     prefix="/api")
 
 
-# IMPORTANT: /ws/global MUST be registered before /ws/{chat_id}
-# otherwise FastAPI matches "global" as chat_id (int) and fails
 @app.websocket("/ws/global")
 async def ws_global(websocket: WebSocket, token: str):
     await global_websocket(websocket, token)

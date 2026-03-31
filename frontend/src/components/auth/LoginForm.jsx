@@ -24,11 +24,21 @@ export default function LoginForm() {
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3">
-      {error && <ErrorBox>{error}</ErrorBox>}
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <div className="mb-1">
+        <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Welcome back</h2>
+        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Sign in to continue</p>
+      </div>
+
+      {error && (
+        <div className="animate-fade-in text-sm px-4 py-3 rounded-2xl"
+          style={{ background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.2)", color: "#f87171" }}>
+          {error}
+        </div>
+      )}
 
       <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-sm select-none"
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-sm select-none pointer-events-none"
           style={{ color: "var(--accent)" }}>@</span>
         <input className="input" style={{ paddingLeft: "1.75rem" }}
           placeholder="username"
@@ -42,26 +52,17 @@ export default function LoginForm() {
         onChange={e => setForm({ ...form, password: e.target.value })}
         required autoComplete="current-password" />
 
-      <button className="btn-primary mt-1" disabled={loading}>
+      <button className="btn-primary" disabled={loading}>
         {loading ? <Spinner text="Signing in…" /> : "Sign In"}
       </button>
 
       <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
         No account?{" "}
-        <Link to="/register" className="font-semibold" style={{ color: "var(--accent)" }}>
+        <Link to="/register" className="font-semibold hover:underline" style={{ color: "var(--accent-light)" }}>
           Register
         </Link>
       </p>
     </form>
-  );
-}
-
-function ErrorBox({ children }) {
-  return (
-    <div className="text-sm px-3 py-2.5 rounded-xl animate-fade-in"
-      style={{ background: "rgba(229,57,53,.12)", border: "1px solid rgba(229,57,53,.25)", color: "#ef5350" }}>
-      {children}
-    </div>
   );
 }
 
