@@ -156,20 +156,26 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
 
         <div className="flex items-center gap-1.5">
           {/*
-            Mine:  [reply] [delete] [bubble →]
-            Other: [← bubble] [reply]
+            Mine:   fixed-slot (reply+delete stacked) | bubble
+            Other:  bubble | fixed-slot (reply)
           */}
+
+          {/* LEFT slot for mine — fixed 28px, both buttons stacked absolutely */}
           {isMine && (
-            <>
-              <ActionBtn show={showReply} onClick={handleReplyClick}
-                color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
-                <ReplyIcon />
-              </ActionBtn>
-              <ActionBtn show={showDelete} onClick={handleDelete}
-                color="rgba(239,68,68,.85)" shadow="0 2px 10px rgba(239,68,68,.4)">
-                <DeleteIcon />
-              </ActionBtn>
-            </>
+            <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0, alignSelf: "center" }}>
+              <div style={{ position: "absolute", inset: 0 }}>
+                <ActionBtn show={showReply} onClick={handleReplyClick}
+                  color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
+                  <ReplyIcon />
+                </ActionBtn>
+              </div>
+              <div style={{ position: "absolute", inset: 0 }}>
+                <ActionBtn show={showDelete} onClick={handleDelete}
+                  color="rgba(239,68,68,.85)" shadow="0 2px 10px rgba(239,68,68,.4)">
+                  <DeleteIcon />
+                </ActionBtn>
+              </div>
+            </div>
           )}
 
           {/* Bubble */}
@@ -208,12 +214,16 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
             </div>
           </div>
 
-          {/* Other's reply button — right side */}
+          {/* RIGHT slot for others */}
           {!isMine && (
-            <ActionBtn show={showReply} onClick={handleReplyClick}
-              color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
-              <ReplyIcon />
-            </ActionBtn>
+            <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0, alignSelf: "center" }}>
+              <div style={{ position: "absolute", inset: 0 }}>
+                <ActionBtn show={showReply} onClick={handleReplyClick}
+                  color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
+                  <ReplyIcon />
+                </ActionBtn>
+              </div>
+            </div>
           )}
         </div>
       </div>

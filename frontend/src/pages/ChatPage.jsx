@@ -38,7 +38,9 @@ export default function ChatPage() {
         updated[idx] = {
           ...updated[idx],
           last_message: { content, sender_username, created_at },
-          unread_count: isActive ? 0 : (updated[idx].unread_count || 0) + 1,
+          // When chat is active: DON'T touch unread_count here —
+          // ChatWindow's IntersectionObserver + onUnreadIncrement handle it
+          ...(isActive ? {} : { unread_count: (updated[idx].unread_count || 0) + 1 }),
         };
         const [moved] = updated.splice(idx, 1);
         return [moved, ...updated];
