@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
@@ -30,4 +32,9 @@ def get_current_user(
     user = db.get(User, int(user_id))
     if user is None or not user.is_active:
         raise credentials_exception
+
+    # Update last_seen on every authenticated request
+    user.last_seen = datetime.now(timezone.utc)
+    db.commit()
+
     return user

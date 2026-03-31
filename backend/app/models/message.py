@@ -15,9 +15,15 @@ class Message(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     message_type: Mapped[str] = mapped_column(String(20), default="text", nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    reply_to_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("messages.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     chat = relationship("Chat", back_populates="messages")
     sender = relationship("User", back_populates="messages")
+    reply_to = relationship("Message", remote_side="Message.id", foreign_keys=[reply_to_id])

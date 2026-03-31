@@ -2,9 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { createChat, searchUsers } from "../../api/chats";
 import { Avatar } from "./Sidebar";
 
+// Only show user if query covers >= 75% of their username length
+function meetsThreshold(query, username) {
+  if (!query || !username) return false;
+  return query.length / username.length >= 0.75;
+}
+
 export default function NewChatModal({ onClose, onCreated }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const [allResults, setAllResults] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -14,16 +20,19 @@ export default function NewChatModal({ onClose, onCreated }) {
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 60); }, []);
 
+  // Filter by 75% threshold client-side
+  const results = allResults.filter(u => meetsThreshold(query.replace(/^@/, ""), u.username));
+
   const search = (raw) => {
     const q = raw.replace(/^@/, "");
     setQuery(raw);
     setSelected(null);
     clearTimeout(timer.current);
-    if (!q.trim()) { setResults([]); return; }
+    if (!q.trim()) { setAllResults([]); return; }
     setSearching(true);
     timer.current = setTimeout(async () => {
-      try { const { data } = await searchUsers(q); setResults(data); }
-      catch { setResults([]); }
+      try { const { data } = await searchUsers(q); setAllResults(data); }
+      catch { setAllResults([]); }
       finally { setSearching(false); }
     }, 280);
   };
@@ -42,6 +51,9 @@ export default function NewChatModal({ onClose, onCreated }) {
     }
   };
 
+  const q = query.replace(/^@/, "").trim();
+  const noResults = q && !searching && results.length === 0;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center animate-fade-in"
@@ -53,14 +65,12 @@ export default function NewChatModal({ onClose, onCreated }) {
         style={{
           background: "var(--bg-card)",
           border: "1px solid var(--border)",
-          boxShadow: "0 24px 64px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset",
+          boxShadow: "0 24px 64px rgba(0,0,0,.6)",
           borderRadius: "24px 24px 0 0",
           padding: "20px 16px calc(20px + env(safe-area-inset-bottom))",
         }}
       >
-        {/* Handle */}
-        <div className="sm:hidden w-10 h-1 rounded-full mx-auto"
-          style={{ background: "var(--bg-elevated)" }} />
+        <div className="sm:hidden w-10 h-1 rounded-full mx-auto" style={{ background: "var(--bg-elevated)" }} />
 
         <div className="flex items-center justify-between">
           <div>
@@ -74,7 +84,6 @@ export default function NewChatModal({ onClose, onCreated }) {
             onMouseLeave={e => e.currentTarget.style.color = "var(--text-secondary)"}>✕</button>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-sm select-none pointer-events-none"
             style={{ color: "var(--accent)" }}>@</span>
@@ -93,15 +102,13 @@ export default function NewChatModal({ onClose, onCreated }) {
           )}
         </div>
 
-        {/* No results */}
-        {query.replace(/^@/, "").trim() && !searching && !results.length && (
+        {noResults && (
           <div className="rounded-2xl px-4 py-4 text-sm text-center animate-fade-in"
             style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
             No users found
           </div>
         )}
 
-        {/* Results */}
         {results.length > 0 && (
           <ul className="rounded-2xl overflow-hidden"
             style={{ border: "1px solid var(--border)", maxHeight: 220, overflowY: "auto" }}>
@@ -125,11 +132,7 @@ export default function NewChatModal({ onClose, onCreated }) {
                       style={chosen
                         ? { background: "var(--accent)", borderColor: "var(--accent)" }
                         : { borderColor: "var(--text-muted)" }}>
-                      {chosen && (
-                        <svg viewBox="0 0 24 24" className="w-3 h-3 fill-white">
-                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                        </svg>
-                      )}
+                      {chosen && <svg viewBox="0 0 24 24" className="w-3 h-3 fill-white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>}
                     </div>
                   </button>
                 </li>

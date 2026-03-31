@@ -4,23 +4,19 @@ const WSContext = createContext(null);
 
 export function WebSocketProvider({ chatId, children }) {
   const wsRef = useRef(null);
+  const [lastMessage, setLastMessage]             = useState(null);
+  const [typingUsers, setTypingUsers]             = useState({});
+  const [onlineUserIds, setOnlineUserIds]         = useState(new Set());
+  const [lastReadMessageId, setLastReadMessageId] = useState(null);
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  const [lastMessage, setLastMessage]           = useState(null);
-  const [typingUsers, setTypingUsers]           = useState({}); // { user_id: username }
-  const [onlineUserIds, setOnlineUserIds]       = useState(new Set());
-  const [lastReadMessageId, setLastReadMessageId] = useState(null); // highest id read by OTHER user
-
-  const typingTimers  = useRef({});
+  const typingTimers   = useRef({});
   const typingThrottle = useRef(null);
 
-  // ── Open / close WS on chatId change ──────────────────────────────────────
   useEffect(() => {
     if (!chatId) return;
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    // Reset per-chat state
     setTypingUsers({});
     setOnlineUserIds(new Set());
     setLastReadMessageId(null);
@@ -34,7 +30,7 @@ export function WebSocketProvider({ chatId, children }) {
     ws.onmessage = ({ data }) => {
       try { dispatch(JSON.parse(data)); } catch {}
     };
-    ws.onerror = (e) => console.error("WS error", e);
+    ws.onerror = e => console.error("WS error", e);
 
     return () => {
       ws.close();
@@ -43,13 +39,11 @@ export function WebSocketProvider({ chatId, children }) {
     };
   }, [chatId]);
 
-  // ── Event dispatcher ───────────────────────────────────────────────────────
   const dispatch = (data) => {
     switch (data.type) {
       case "message":
         setLastMessage(data);
         break;
-
       case "typing": {
         const uid = String(data.user_id);
         if (typingTimers.current[uid]) clearTimeout(typingTimers.current[uid]);
@@ -60,19 +54,15 @@ export function WebSocketProvider({ chatId, children }) {
         }, 3000);
         break;
       }
-
       case "online_status":
         setOnlineUserIds(new Set(data.online_user_ids));
         break;
-
       case "user_online":
         setOnlineUserIds(prev => new Set([...prev, data.user_id]));
         break;
-
       case "user_offline":
         setOnlineUserIds(prev => { const n = new Set(prev); n.delete(data.user_id); return n; });
         break;
-
       case "read_receipt":
         setLastReadMessageId(prev =>
           prev === null || data.message_id > prev ? data.message_id : prev
@@ -81,13 +71,14 @@ export function WebSocketProvider({ chatId, children }) {
     }
   };
 
-  // ── Outgoing helpers ───────────────────────────────────────────────────────
   const raw = (payload) => {
     if (wsRef.current?.readyState === WebSocket.OPEN)
       wsRef.current.send(JSON.stringify(payload));
   };
 
-  const sendMessage = useCallback((content) => raw({ type: "message", content }), []);
+  const sendMessage = useCallback((content, replyToId = null) => {
+    raw({ type: "message", content, ...(replyToId ? { reply_to_id: replyToId } : {}) });
+  }, []);
 
   const sendTyping = useCallback(() => {
     if (typingThrottle.current) return;
@@ -101,13 +92,8 @@ export function WebSocketProvider({ chatId, children }) {
 
   return (
     <WSContext.Provider value={{
-      sendMessage,
-      sendTyping,
-      sendRead,
-      lastMessage,
-      typingUsers,
-      onlineUserIds,
-      lastReadMessageId,
+      sendMessage, sendTyping, sendRead,
+      lastMessage, typingUsers, onlineUserIds, lastReadMessageId,
     }}>
       {children}
     </WSContext.Provider>

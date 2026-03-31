@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.chat import Chat
@@ -13,7 +14,6 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
         ChatMember.chat_id == chat.id, ChatMember.user_id == current_user_id
     ).first()
 
-    # Last message
     last = (
         db.query(Message)
         .filter(Message.chat_id == chat.id, Message.is_deleted == False)
@@ -29,7 +29,6 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
             created_at=last.created_at,
         )
 
-    # Partner username for DMs
     partner_username = None
     if chat.chat_type == "dm":
         other = db.query(ChatMember).filter(
@@ -39,7 +38,6 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
             u = db.get(User, other.user_id)
             partner_username = u.username if u else None
 
-    # Unread count — messages from others newer than last_read
     last_read_id = membership.last_read_message_id if membership else None
     unread_q = db.query(Message).filter(
         Message.chat_id == chat.id,
@@ -58,11 +56,22 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
 
 
 def get_user_chats(db: Session, user_id: int) -> list[ChatOut]:
+    # Subquery: last message time per chat
+    last_msg_time = (
+        db.query(Message.chat_id, func.max(Message.created_at).label("last_at"))
+        .filter(Message.is_deleted == False)
+        .group_by(Message.chat_id)
+        .subquery()
+    )
+
     chats = (
         db.query(Chat)
         .join(ChatMember, ChatMember.chat_id == Chat.id)
+        .outerjoin(last_msg_time, last_msg_time.c.chat_id == Chat.id)
         .filter(ChatMember.user_id == user_id)
-        .order_by(Chat.created_at.desc())
+        .order_by(
+            func.coalesce(last_msg_time.c.last_at, Chat.created_at).desc()
+        )
         .all()
     )
     return [_build_chat_out(db, c, user_id) for c in chats]

@@ -7,9 +7,9 @@ from app.core.websocket_manager import manager
 from app.core.global_ws_manager import global_manager
 from app.database import SessionLocal
 from app.models.chat_member import ChatMember
+from app.models.message import Message
 from app.models.user import User
-from app.services.message_service import save_message
-from app.services.push_service import send_push_to_user
+from app.services.message_service import save_message, _build_message_out
 
 
 async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None:
@@ -53,9 +53,17 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                     content = (data.get("content") or "").strip()
                     if not content:
                         continue
+                    reply_to_id = data.get("reply_to_id")
+                    if reply_to_id is not None:
+                        # Validate that the reply target belongs to this chat
+                        parent = db.get(Message, reply_to_id)
+                        if not parent or parent.chat_id != chat_id:
+                            reply_to_id = None
 
-                    msg = save_message(db, chat_id, user_id, content)
-                    payload_out = {
+                    msg = save_message(db, chat_id, user_id, content, reply_to_id)
+                    msg_out = _build_message_out(db, msg)
+
+                    payload_ws = {
                         "type": "message",
                         "message_id": msg.id,
                         "chat_id": chat_id,
@@ -63,13 +71,11 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                         "sender_username": user.username,
                         "content": content,
                         "created_at": msg.created_at.isoformat(),
+                        "reply_to": msg_out.reply_to.model_dump() if msg_out.reply_to else None,
                     }
-                    await manager.broadcast(chat_id, payload_out)
+                    await manager.broadcast(chat_id, payload_ws)
 
-                    # Notify all members via global WS + push
                     members = db.query(ChatMember).filter(ChatMember.chat_id == chat_id).all()
-                    online_now = set(manager.online_in_chat(chat_id))
-
                     for m in members:
                         await global_manager.notify(m.user_id, {
                             "type": "new_message",
@@ -79,15 +85,6 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                             "content": content,
                             "created_at": msg.created_at.isoformat(),
                         })
-                        # Push only to members who are NOT currently viewing the app
-                        if m.user_id != user_id and m.user_id not in global_manager._conns:
-                            send_push_to_user(
-                                db,
-                                m.user_id,
-                                title=f"@{user.username}",
-                                body=content[:100],
-                                data={"chat_id": chat_id},
-                            )
 
                 elif msg_type == "typing":
                     await manager.broadcast(chat_id, {

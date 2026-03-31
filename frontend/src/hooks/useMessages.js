@@ -14,17 +14,15 @@ export function useMessages(chatId) {
     setLoading(true);
     setMessages([]);
     getMessages(chatId)
-      .then((r) => {
-        if (prevChatId.current === chatId) setMessages(r.data);
-      })
+      .then(r => { if (prevChatId.current === chatId) setMessages(r.data); })
       .finally(() => setLoading(false));
   }, [chatId]);
 
   useEffect(() => {
     if (!lastMessage || lastMessage.type !== "message") return;
     if (lastMessage.chat_id !== chatId) return;
-    setMessages((prev) => {
-      if (prev.some((m) => m.id === lastMessage.message_id)) return prev;
+    setMessages(prev => {
+      if (prev.some(m => m.id === lastMessage.message_id)) return prev;
       return [
         ...prev,
         {
@@ -36,6 +34,7 @@ export function useMessages(chatId) {
           created_at: lastMessage.created_at,
           message_type: "text",
           is_deleted: false,
+          reply_to: lastMessage.reply_to || null,
         },
       ];
     });

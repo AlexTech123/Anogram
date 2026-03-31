@@ -30,17 +30,20 @@ export default function ChatPage() {
     if (lastEvent.type === "new_message") {
       const { chat_id, content, sender_username, created_at } = lastEvent;
       const isActive = activeChatIdRef.current === chat_id;
+
       setChats(prev => {
-        const exists = prev.find(c => c.id === chat_id);
-        if (!exists) { loadChats(); return prev; }
-        const updated = prev.map(c => c.id !== chat_id ? c : {
-          ...c,
+        const idx = prev.findIndex(c => c.id === chat_id);
+        if (idx === -1) { loadChats(); return prev; }
+
+        const updated = [...prev];
+        updated[idx] = {
+          ...updated[idx],
           last_message: { content, sender_username, created_at },
-          unread_count: isActive ? 0 : (c.unread_count || 0) + 1,
-        });
-        const idx = updated.findIndex(c => c.id === chat_id);
-        if (idx > 0) { const [m] = updated.splice(idx, 1); updated.unshift(m); }
-        return [...updated];
+          unread_count: isActive ? 0 : (updated[idx].unread_count || 0) + 1,
+        };
+        // Bubble to top
+        const [moved] = updated.splice(idx, 1);
+        return [moved, ...updated];
       });
     }
 
@@ -80,6 +83,13 @@ export default function ChatPage() {
     setActiveChat(null);
   };
 
+  const handleChatCreated = (chat) => {
+    setChats(prev => {
+      if (prev.find(c => c.id === chat.id)) return prev;
+      return [chat, ...prev];
+    });
+  };
+
   return (
     <WebSocketProvider chatId={activeChatId}>
       <AppLayout
@@ -89,7 +99,7 @@ export default function ChatPage() {
             chats={chats}
             activeChatId={activeChatId}
             onSelectChat={selectChat}
-            onChatCreated={chat => setChats(prev => prev.find(c => c.id === chat.id) ? prev : [chat, ...prev])}
+            onChatCreated={handleChatCreated}
           />
         }
         main={
