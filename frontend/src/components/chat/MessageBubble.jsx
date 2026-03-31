@@ -160,17 +160,18 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
             Other:  bubble | fixed-slot (reply)
           */}
 
-          {/* LEFT slot for mine — fixed 28px, both buttons stacked absolutely.
-              Delete is rendered FIRST (lower z), Reply SECOND (higher z, clickable on top) */}
+          {/* LEFT slot for mine — fixed 28px, buttons stacked.
+              Wrapper pointerEvents follows visibility so the hidden one
+              never intercepts clicks meant for the visible one. */}
           {isMine && (
             <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0, alignSelf: "center" }}>
-              <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
+              <div style={{ position: "absolute", inset: 0, pointerEvents: showDelete ? "auto" : "none" }}>
                 <ActionBtn show={showDelete} onClick={handleDelete}
                   color="rgba(239,68,68,.85)" shadow="0 2px 10px rgba(239,68,68,.4)">
                   <DeleteIcon />
                 </ActionBtn>
               </div>
-              <div style={{ position: "absolute", inset: 0, zIndex: 2 }}>
+              <div style={{ position: "absolute", inset: 0, pointerEvents: showReply ? "auto" : "none" }}>
                 <ActionBtn show={showReply} onClick={handleReplyClick}
                   color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
                   <ReplyIcon />
