@@ -1,6 +1,13 @@
-FROM anogram-frontend AS static
+# Stage 1: build frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ .
+RUN npm run build
 
+# Stage 2: nginx with built frontend + custom config
 FROM nginx:alpine
-COPY --from=static /usr/share/nginx/html /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY --from=frontend-builder /app/dist /usr/share/nginx/html
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80
