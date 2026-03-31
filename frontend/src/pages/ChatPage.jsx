@@ -11,6 +11,7 @@ export default function ChatPage() {
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [activeChat, setActiveChat] = useState(null);
+  const [showChat, setShowChat] = useState(false); // mobile: show chat pane
 
   useEffect(() => {
     getChats().then((r) => setChats(r.data));
@@ -18,8 +19,8 @@ export default function ChatPage() {
 
   const selectChat = async (id) => {
     setActiveChatId(id);
+    setShowChat(true);
     const { data } = await getChat(id);
-    // For DMs, use the other user's name
     if (data.chat_type === "dm") {
       const other = data.members?.find((m) => m.user_id !== user?.id);
       data.name = other?.user?.display_name || other?.user?.username || "Direct Message";
@@ -27,33 +28,31 @@ export default function ChatPage() {
     setActiveChat(data);
   };
 
-  const handleChatCreated = (chat) => {
-    setChats((prev) => {
-      if (prev.find((c) => c.id === chat.id)) return prev;
-      return [chat, ...prev];
-    });
+  const goBack = () => {
+    setShowChat(false);
+    setActiveChatId(null);
+    setActiveChat(null);
   };
 
-  // Compute display names for DMs in sidebar
-  const displayChats = chats.map((c) => {
-    if (c.chat_type === "dm" && !c.name) {
-      return { ...c, name: "Direct Message" };
-    }
-    return c;
-  });
+  const handleChatCreated = (chat) => {
+    setChats((prev) => prev.find((c) => c.id === chat.id) ? prev : [chat, ...prev]);
+  };
 
   return (
     <WebSocketProvider chatId={activeChatId}>
       <AppLayout
+        showChat={showChat}
         sidebar={
           <Sidebar
-            chats={displayChats}
+            chats={chats}
             activeChatId={activeChatId}
             onSelectChat={selectChat}
             onChatCreated={handleChatCreated}
           />
         }
-        main={<ChatWindow chat={activeChat} />}
+        main={
+          <ChatWindow chat={activeChat} onBack={goBack} />
+        }
       />
     </WebSocketProvider>
   );

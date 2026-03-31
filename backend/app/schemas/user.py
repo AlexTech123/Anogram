@@ -4,10 +4,14 @@ from pydantic import BaseModel, EmailStr
 
 
 class UserCreate(BaseModel):
-    username: str
+    email: EmailStr
+    username: str         # display name, shown in chat
+    password: str
+
+
+class UserLogin(BaseModel):
     email: EmailStr
     password: str
-    display_name: str | None = None
 
 
 class UserPublic(BaseModel):
@@ -22,4 +26,5 @@ class UserPublic(BaseModel):
 
 
 class UserUpdate(BaseModel):
+    username: str | None = None
     display_name: str | None = None

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useAuth } from "../../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function RegisterForm() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", email: "", password: "", display_name: "" });
+  const [form, setForm] = useState({ email: "", username: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -37,31 +37,24 @@ export default function RegisterForm() {
           className="text-sm px-3 py-2.5 rounded-xl flex items-center gap-2 animate-fade-in"
           style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}
         >
-          <span>⚠</span> {error}
+          ⚠ {error}
         </div>
       )}
 
-      <Field label="Username">
-        <input className="input" placeholder="my_username" value={form.username} onChange={set("username")} required autoFocus />
+      <Field label="Email — used to sign in">
+        <input className="input" type="email" placeholder="you@example.com" value={form.email} onChange={set("email")} required autoFocus />
       </Field>
-      <Field label="Display name (optional)">
-        <input className="input" placeholder="John Doe" value={form.display_name} onChange={set("display_name")} />
+
+      <Field label="Username — shown to others, used for search">
+        <input className="input" placeholder="coolname" value={form.username} onChange={set("username")} required />
       </Field>
-      <Field label="Email">
-        <input className="input" type="email" placeholder="you@example.com" value={form.email} onChange={set("email")} required />
-      </Field>
+
       <Field label="Password">
         <input className="input" type="password" placeholder="••••••••" value={form.password} onChange={set("password")} required />
       </Field>
 
       <button className="btn-primary mt-1" type="submit" disabled={loading}>
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <Spinner /> Creating account…
-          </span>
-        ) : (
-          "Create account"
-        )}
+        {loading ? <Spinner text="Creating account…" /> : "Create account"}
       </button>
 
       <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
@@ -83,11 +76,14 @@ function Field({ label, children }) {
   );
 }
 
-function Spinner() {
+function Spinner({ text }) {
   return (
-    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeOpacity="0.25" />
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
-    </svg>
+    <span className="flex items-center justify-center gap-2">
+      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeOpacity="0.25" />
+        <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+      {text}
+    </span>
   );
 }

@@ -4,7 +4,7 @@ import ChatHeader from "./ChatHeader";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
 
-export default function ChatWindow({ chat }) {
+export default function ChatWindow({ chat, onBack }) {
   const { messages, loading } = useMessages(chat?.id);
   const bottomRef = useRef(null);
 
@@ -14,7 +14,10 @@ export default function ChatWindow({ chat }) {
 
   if (!chat) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-5" style={{ background: "var(--bg-base)" }}>
+      <div
+        className="hidden sm:flex flex-1 flex-col items-center justify-center gap-5"
+        style={{ background: "var(--bg-base)" }}
+      >
         <div
           className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
@@ -31,14 +34,14 @@ export default function ChatWindow({ chat }) {
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
           style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
         >
-          <span>Press</span>
+          Press
           <kbd
             className="px-2 py-0.5 rounded text-xs font-mono font-bold"
             style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)" }}
           >
             +
           </kbd>
-          <span>in the sidebar to create a chat</span>
+          to start a chat
         </div>
       </div>
     );
@@ -46,9 +49,9 @@ export default function ChatWindow({ chat }) {
 
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--bg-base)" }}>
-      <ChatHeader chat={chat} />
+      <ChatHeader chat={chat} onBack={onBack} />
 
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
         {loading && (
           <div className="flex justify-center py-4">
             <div className="flex gap-1.5">
@@ -56,11 +59,7 @@ export default function ChatWindow({ chat }) {
                 <div
                   key={i}
                   className="w-2 h-2 rounded-full animate-bounce"
-                  style={{
-                    background: "var(--accent)",
-                    animationDelay: `${i * 0.15}s`,
-                    opacity: 0.6,
-                  }}
+                  style={{ background: "var(--accent)", animationDelay: `${i * 0.15}s`, opacity: 0.6 }}
                 />
               ))}
             </div>
