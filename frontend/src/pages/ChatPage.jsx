@@ -24,7 +24,6 @@ export default function ChatPage() {
 
   useEffect(() => { loadChats(); }, []);
 
-  // Handle global WS events
   useEffect(() => {
     if (!lastEvent || lastEvent.type !== "new_message") return;
     const { chat_id, content, sender_username, created_at } = lastEvent;
@@ -32,28 +31,14 @@ export default function ChatPage() {
 
     setChats(prev => {
       const exists = prev.find(c => c.id === chat_id);
-
-      // Chat not in list yet (first message from someone new) — reload
-      if (!exists) {
-        loadChats();
-        return prev;
-      }
-
-      const updated = prev.map(c => {
-        if (c.id !== chat_id) return c;
-        return {
-          ...c,
-          last_message: { content, sender_username, created_at },
-          unread_count: isActive ? 0 : (c.unread_count || 0) + 1,
-        };
+      if (!exists) { loadChats(); return prev; }
+      const updated = prev.map(c => c.id !== chat_id ? c : {
+        ...c,
+        last_message: { content, sender_username, created_at },
+        unread_count: isActive ? 0 : (c.unread_count || 0) + 1,
       });
-
-      // Bubble updated chat to top
       const idx = updated.findIndex(c => c.id === chat_id);
-      if (idx > 0) {
-        const [moved] = updated.splice(idx, 1);
-        updated.unshift(moved);
-      }
+      if (idx > 0) { const [m] = updated.splice(idx, 1); updated.unshift(m); }
       return [...updated];
     });
   }, [lastEvent]);
@@ -68,6 +53,13 @@ export default function ChatPage() {
       data.name = other?.user?.username || "Direct Message";
     }
     setActiveChat(data);
+  };
+
+  const handleChatDeleted = (id) => {
+    setChats(prev => prev.filter(c => c.id !== id));
+    setActiveChatId(null);
+    setActiveChat(null);
+    setShowChat(false);
   };
 
   const goBack = () => {
@@ -93,7 +85,13 @@ export default function ChatPage() {
             currentUser={user}
           />
         }
-        main={<ChatWindow chat={activeChat} onBack={goBack} />}
+        main={
+          <ChatWindow
+            chat={activeChat}
+            onBack={goBack}
+            onChatDeleted={handleChatDeleted}
+          />
+        }
       />
     </WebSocketProvider>
   );

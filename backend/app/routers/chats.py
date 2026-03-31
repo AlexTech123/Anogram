@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.models.chat import Chat
+from app.models.chat_member import ChatMember
 from app.models.user import User
 from app.schemas.chat import ChatCreate, ChatDetailOut, ChatOut
 from app.services.chat_service import (
@@ -31,6 +33,20 @@ def create(data: ChatCreate, current_user: User = Depends(get_current_user), db:
 @router.get("/{chat_id}", response_model=ChatDetailOut)
 def get_chat(chat_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return get_chat_or_403(db, chat_id, current_user.id)
+
+
+@router.delete("/{chat_id}", status_code=204)
+def delete_chat(chat_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    chat = db.get(Chat, chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    member = db.query(ChatMember).filter(
+        ChatMember.chat_id == chat_id, ChatMember.user_id == current_user.id
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="Not a member")
+    db.delete(chat)
+    db.commit()
 
 
 @router.post("/{chat_id}/members", response_model=ChatDetailOut)

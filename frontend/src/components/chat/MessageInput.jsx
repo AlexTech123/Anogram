@@ -11,7 +11,11 @@ export default function MessageInput() {
     if (!content) return;
     sendMessage(content);
     setText("");
-    if (ref.current) ref.current.style.height = "auto";
+    if (ref.current) {
+      ref.current.style.height = "auto";
+      // Keep focus so keyboard stays open on mobile
+      ref.current.focus();
+    }
   };
 
   const onKey = (e) => {
@@ -29,19 +33,14 @@ export default function MessageInput() {
   const hasText = text.trim().length > 0;
 
   return (
-    <div
-      className="flex-shrink-0 flex items-end gap-2 px-3 py-2"
+    <div className="flex-shrink-0 flex items-end gap-2 px-3 py-2"
       style={{
         background: "var(--bg-sidebar)",
         borderTop: "1px solid var(--border)",
         paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
-      }}
-    >
-      {/* Input area */}
-      <div
-        className="flex-1 flex items-end rounded-2xl px-3 py-2 transition-all duration-200"
-        style={{ background: "var(--bg-elevated)", minHeight: 40 }}
-      >
+      }}>
+      <div className="flex-1 flex items-end rounded-2xl px-3 py-2"
+        style={{ background: "var(--bg-elevated)", minHeight: 40 }}>
         <textarea
           ref={ref}
           className="flex-1 bg-transparent text-sm resize-none outline-none leading-relaxed"
@@ -54,8 +53,6 @@ export default function MessageInput() {
           onKeyDown={onKey}
         />
       </div>
-
-      {/* Send button */}
       <button
         onClick={send}
         disabled={!hasText}
@@ -64,8 +61,8 @@ export default function MessageInput() {
           ? { background: "var(--accent)", boxShadow: "0 2px 12px rgba(42,171,238,.4)" }
           : { background: "var(--bg-elevated)", opacity: .4 }
         }
-        onMouseEnter={e => { if (hasText) e.currentTarget.style.filter = "brightness(1.12)"; }}
-        onMouseLeave={e => { e.currentTarget.style.filter = "none"; }}
+        // prevent button from stealing focus from textarea
+        onMouseDown={e => e.preventDefault()}
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" style={{ transform: "translateX(1px)" }}>
           <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
