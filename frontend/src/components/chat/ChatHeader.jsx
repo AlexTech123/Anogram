@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useWebSocket } from "../../context/WebSocketContext";
+import { useGlobalWS } from "../../context/GlobalWSContext";
 import { Avatar } from "../sidebar/Sidebar";
 import { deleteChat } from "../../api/chats";
 
 export default function ChatHeader({ chat, onBack, onChatDeleted }) {
   const { user } = useAuth();
-  const { onlineUserIds, typingUsers } = useWebSocket();
+  const { typingUsers } = useWebSocket();
+  const { onlineIds } = useGlobalWS();   // ← global presence, not chat-local
   const [showMenu, setShowMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -15,26 +17,22 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
 
   const name = chat.name || "Direct Message";
   const other = chat.members?.find(m => m.user_id !== user?.id);
-  const isOnline = other ? onlineUserIds.has(other.user_id) : false;
+  // Use global onlineIds — true if partner is anywhere in the app
+  const isOnline = other ? (onlineIds?.has(other.user_id) ?? false) : false;
   const typingList = Object.values(typingUsers);
 
   const handleDeleteChat = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return; }
     setDeleting(true);
-    try {
-      await deleteChat(chat.id);
-      onChatDeleted(chat.id);
-    } finally {
-      setDeleting(false);
-      setConfirmDelete(false);
-      setShowMenu(false);
-    }
+    try { await deleteChat(chat.id); onChatDeleted(chat.id); }
+    finally { setDeleting(false); setConfirmDelete(false); setShowMenu(false); }
   };
 
   return (
-    <div className="flex-shrink-0 flex items-center gap-3 px-4"
-      style={{ height: 58, background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}>
-
+    <div
+      className="flex-shrink-0 flex items-center gap-3 px-4"
+      style={{ height: 58, background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}
+    >
       {/* Back — mobile */}
       <button onClick={onBack}
         className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
@@ -68,23 +66,26 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
         )}
       </div>
 
-      {/* More menu */}
+      {/* More */}
       <div className="relative flex-shrink-0">
         <button
           onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); }}
           className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
           style={{ color: "var(--text-secondary)" }}
           onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+        >
           <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
-            <circle cx="12" cy="5"  r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
           </svg>
         </button>
 
         {showMenu && (
-          <div className="absolute right-0 top-full mt-2 rounded-2xl shadow-2xl z-50 py-1.5 animate-pop"
+          <div
+            className="absolute right-0 top-full mt-2 rounded-2xl shadow-2xl z-50 py-1.5 animate-pop"
             style={{ background: "var(--bg-card)", border: "1px solid var(--bg-elevated)", minWidth: 180 }}
-            onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}>
+            onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}
+          >
             <button onClick={handleDeleteChat} disabled={deleting}
               className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 rounded-xl mx-1 transition-all"
               style={{
@@ -93,7 +94,8 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
                 background: confirmDelete ? "rgba(239,68,68,.7)" : "transparent",
               }}
               onMouseEnter={e => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,.1)"; }}
-              onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = "transparent"; }}>
+              onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = "transparent"; }}
+            >
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
               </svg>

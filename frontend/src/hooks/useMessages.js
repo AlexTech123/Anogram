@@ -5,6 +5,7 @@ import { useWebSocket } from "../context/WebSocketContext";
 export function useMessages(chatId) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [newUnseenCount, setNewUnseenCount] = useState(0);
   const { lastMessage } = useWebSocket();
   const prevChatId = useRef(null);
 
@@ -13,6 +14,7 @@ export function useMessages(chatId) {
     prevChatId.current = chatId;
     setLoading(true);
     setMessages([]);
+    setNewUnseenCount(0);
     getMessages(chatId)
       .then(r => { if (prevChatId.current === chatId) setMessages(r.data); })
       .finally(() => setLoading(false));
@@ -40,5 +42,7 @@ export function useMessages(chatId) {
     });
   }, [lastMessage, chatId]);
 
-  return { messages, loading };
+  const markSeen = () => setNewUnseenCount(0);
+
+  return { messages, loading, newUnseenCount, setNewUnseenCount, markSeen };
 }

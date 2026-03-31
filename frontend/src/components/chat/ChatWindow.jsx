@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMessages } from "../../hooks/useMessages";
 import { useWebSocket } from "../../context/WebSocketContext";
+import { useAuth } from "../../context/AuthContext";
 import ChatHeader from "./ChatHeader";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
@@ -18,8 +19,7 @@ function formatDateLabel(iso) {
 function sameDay(a, b) {
   const da = new Date(a), db = new Date(b);
   return da.getFullYear() === db.getFullYear() &&
-    da.getMonth() === db.getMonth() &&
-    da.getDate() === db.getDate();
+    da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
 }
 
 function DateDivider({ date }) {
@@ -35,29 +35,43 @@ function DateDivider({ date }) {
   );
 }
 
-export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead }) {
-  const { messages: fetched, loading } = useMessages(chat?.id);
+export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead, onUnreadIncrement }) {
+  const { user } = useAuth();
+  const { messages: fetched, loading, newUnseenCount, setNewUnseenCount, markSeen } = useMessages(chat?.id);
   const [messages, setMessages] = useState([]);
   const [replyTo, setReplyTo] = useState(null);
   const [atBottom, setAtBottom] = useState(true);
-  const { sendRead } = useWebSocket();
+  const { sendRead, lastMessage } = useWebSocket();
   const listRef = useRef(null);
   const observerRef = useRef(null);
   const highestSeenId = useRef(null);
 
   useEffect(() => { setMessages(fetched); setReplyTo(null); }, [fetched]);
 
+  // Auto-scroll when at bottom
   useEffect(() => {
     if (!listRef.current || !atBottom) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
+  // Initial scroll
   useEffect(() => {
     if (!listRef.current || !messages.length) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [chat?.id]);
 
-  // IntersectionObserver — fire read receipt only when bubble is visible
+  // Track new incoming messages not yet visible
+  useEffect(() => {
+    if (!lastMessage || lastMessage.type !== "message") return;
+    if (lastMessage.chat_id !== chat?.id) return;
+    // If message is from someone else and not at bottom → increment unseen
+    if (lastMessage.sender_id !== user?.id && !atBottom) {
+      setNewUnseenCount(prev => prev + 1);
+      onUnreadIncrement?.(chat.id);
+    }
+  }, [lastMessage]);
+
+  // IntersectionObserver
   useEffect(() => {
     if (!chat) return;
     highestSeenId.current = null;
@@ -82,24 +96,23 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
     return () => { observerRef.current?.disconnect(); observerRef.current = null; };
   }, [chat?.id]);
 
+  useEffect(() => { highestSeenId.current = null; }, [chat?.id]);
+
   const handleScroll = useCallback(() => {
     if (!listRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
-    setAtBottom(scrollHeight - scrollTop - clientHeight < 80);
-  }, []);
+    const bottom = scrollHeight - scrollTop - clientHeight < 80;
+    setAtBottom(bottom);
+    if (bottom) { markSeen(); onMessagesRead?.(chat?.id); }
+  }, [chat?.id]);
 
   const handleDeleted = (id) => setMessages(prev => prev.filter(m => m.id !== id));
-
-  const handleContainerClick = (e) => {
-    if (e.target === listRef.current) onBack();
-  };
+  const handleContainerClick = (e) => { if (e.target === listRef.current) onBack(); };
 
   if (!chat) {
     return (
-      <div
-        className="hidden sm:flex flex-1 flex-col items-center justify-center gap-5"
-        style={{ background: "var(--bg-base)" }}
-      >
+      <div className="hidden sm:flex flex-1 flex-col items-center justify-center gap-5"
+        style={{ background: "var(--bg-base)" }}>
         <div className="relative">
           <div className="absolute inset-0 rounded-3xl pointer-events-none"
             style={{ background: "radial-gradient(circle, rgba(124,111,255,.2) 0%, transparent 70%)", filter: "blur(24px)", transform: "scale(1.6)" }} />
@@ -181,16 +194,30 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
           <div />
         </div>
 
-        {/* Scroll-to-bottom button */}
+        {/* Scroll-to-bottom + unseen count badge */}
         {!atBottom && (
           <button
-            onClick={() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })}
-            className="absolute bottom-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all animate-fade-in active:scale-90"
-            style={{ background: "var(--accent-gradient)", boxShadow: "0 4px 16px rgba(99,102,241,.5)" }}
+            onClick={() => {
+              listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+              markSeen();
+            }}
+            className="absolute bottom-4 right-4 flex items-center justify-center shadow-lg transition-all animate-fade-in active:scale-90"
+            style={{
+              background: "var(--accent-gradient)",
+              boxShadow: "0 4px 16px rgba(99,102,241,.5)",
+              borderRadius: "50%",
+              width: 36, height: 36,
+            }}
           >
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white">
-              <path d="M7 10l5 5 5-5z"/>
-            </svg>
+            {newUnseenCount > 0 ? (
+              <span className="text-white font-bold" style={{ fontSize: 11 }}>
+                {newUnseenCount > 99 ? "99+" : newUnseenCount}
+              </span>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white">
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
+            )}
           </button>
         )}
       </div>

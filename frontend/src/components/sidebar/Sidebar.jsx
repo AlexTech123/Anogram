@@ -18,25 +18,109 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
     finally { setDeleting(false); }
   };
 
+  const iAmOnline = user ? onlineIds?.has(user.id) : false;
+
   return (
     <>
-      {/* Top bar */}
-      <div className="flex-shrink-0 flex items-center gap-2 px-3"
-        style={{ height: 58, borderBottom: "1px solid var(--border)", background: "var(--bg-sidebar)" }}>
+      {/* ── Top bar ─────────────────────────────────────────────── */}
+      <div
+        className="flex-shrink-0 flex items-center gap-2.5 px-4"
+        style={{ height: 58, borderBottom: "1px solid var(--border)", background: "var(--bg-sidebar)" }}
+      >
+        {/* Logo — no letter, just wordmark */}
+        <span
+          className="flex-1 font-black tracking-tight select-none"
+          style={{
+            fontSize: 20,
+            background: "linear-gradient(90deg, #a78bfa 0%, #818cf8 60%, #60a5fa 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            fontStyle: "italic",
+          }}
+        >
+          Anogram
+        </span>
 
+        {/* New chat */}
+        <button
+          onClick={() => setShowModal(true)}
+          title="New message"
+          className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
+          style={{ color: "var(--text-secondary)" }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--accent-light)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+            <path d="M20 13h-7v7h-2v-7H4v-2h7V4h2v7h7z"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* ── Chat list — takes remaining space and scrolls ─────────── */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <ChatList
+          chats={chats}
+          activeChatId={activeChatId}
+          onSelect={onSelectChat}
+          currentUser={user}
+          onlineIds={onlineIds}
+        />
+      </div>
+
+      {/* ── Bottom nav area — always visible, never scrolls ──────── */}
+      <div
+        className="flex-shrink-0"
+        style={{ borderTop: "1px solid var(--border)", background: "var(--bg-sidebar)" }}
+      >
+        {/* Tap anywhere in this area to deselect chat */}
+        {activeChatId && (
+          <button
+            onClick={onDeselectChat}
+            className="w-full flex items-center gap-2 px-4 py-2.5 transition-all text-left"
+            style={{ color: "var(--text-muted)", fontSize: 11 }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
+          >
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current flex-shrink-0">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            Back to chats
+          </button>
+        )}
+
+        {/* User row */}
         <div className="relative">
-          <button onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); }}
-            className="transition-all active:scale-90 flex-shrink-0">
-            <Avatar name={user?.username || "?"} size={9} />
+          <button
+            onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); }}
+            className="w-full flex items-center gap-2.5 px-4 py-3 transition-all"
+            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-elevated)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            {/* Avatar with online dot */}
+            <Avatar name={user?.username || "?"} size={8} online={iAmOnline} />
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                @{user?.username}
+              </p>
+              <p className="text-xs" style={{ color: iAmOnline ? "var(--online)" : "var(--text-muted)" }}>
+                {iAmOnline ? "online" : "offline"}
+              </p>
+            </div>
+            <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0 fill-current" style={{ color: "var(--text-muted)" }}>
+              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
           </button>
 
           {showMenu && (
-            <div className="absolute left-0 top-full mt-2 rounded-2xl shadow-2xl z-50 animate-pop"
-              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", minWidth: 190, overflow: "hidden" }}
-              onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}>
+            <div
+              className="absolute left-2 right-2 bottom-full mb-2 rounded-2xl shadow-2xl z-50 animate-pop overflow-hidden"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+              onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}
+            >
               <div className="px-4 py-3 flex items-center gap-2.5"
                 style={{ background: "linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.08))", borderBottom: "1px solid var(--border)" }}>
-                <Avatar name={user?.username || "?"} size={8} />
+                <Avatar name={user?.username || "?"} size={8} online={iAmOnline} />
                 <div>
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>@{user?.username}</p>
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>Anonymous</p>
@@ -67,37 +151,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
             </div>
           )}
         </div>
-
-        <span className="flex-1 font-bold text-base" style={{ color: "var(--text-primary)" }}>Anogram</span>
-
-        <button onClick={() => setShowModal(true)} title="New message"
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
-          style={{ color: "var(--text-secondary)" }}
-          onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--accent-light)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
-          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
-            <path d="M20 13h-7v7h-2v-7H4v-2h7V4h2v7h7z"/>
-          </svg>
-        </button>
       </div>
-
-      {/* Chat list — scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        <ChatList
-          chats={chats}
-          activeChatId={activeChatId}
-          onSelect={onSelectChat}
-          currentUser={user}
-          onlineIds={onlineIds}
-        />
-      </div>
-
-      {/* Clickable empty area below list — deselects active chat */}
-      <div
-        className="flex-shrink-0 cursor-default"
-        style={{ minHeight: 48 }}
-        onClick={onDeselectChat}
-      />
 
       {showModal && (
         <NewChatModal
@@ -119,13 +173,15 @@ export function Avatar({ name = "?", size = 10, online = null }) {
   const px = size * 4;
   return (
     <div className="relative flex-shrink-0">
-      <div className="rounded-2xl flex items-center justify-center font-bold text-white select-none"
-        style={{ width: px, height: px, fontSize: Math.round(px * .4), background: `linear-gradient(135deg,${a},${b})` }}>
+      <div
+        className="rounded-2xl flex items-center justify-center font-bold text-white select-none"
+        style={{ width: px, height: px, fontSize: Math.round(px * .4), background: `linear-gradient(135deg,${a},${b})` }}
+      >
         {name.replace(/^@/, "").charAt(0).toUpperCase()}
       </div>
       {online !== null && (
         <span
-          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 transition-colors duration-500"
+          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 transition-all duration-500"
           style={{
             background: online ? "var(--online)" : "#4b5563",
             borderColor: "var(--bg-sidebar)",

@@ -68,7 +68,7 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser, o
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs truncate flex-1"
+                  <p className="text-xs truncate flex-1 text-left"
                     style={{ color: unread > 0 ? "var(--text-secondary)" : "var(--text-muted)" }}>
                     {preview}
                   </p>

@@ -101,6 +101,9 @@ export default function ChatPage() {
             onBack={goBack}
             onChatDeleted={handleChatDeleted}
             onMessagesRead={handleMessagesRead}
+            onUnreadIncrement={(chatId) =>
+              setChats(prev => prev.map(c => c.id === chatId ? { ...c, unread_count: (c.unread_count || 0) + 1 } : c))
+            }
           />
         }
       />

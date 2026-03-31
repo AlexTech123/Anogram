@@ -7,7 +7,7 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const SHOW_MS = 3000;
+const SHOW_MS = 2000;
 
 export default function MessageBubble({ message, onDeleted, showSender, onReply, observerRef }) {
   const { user } = useAuth();
@@ -153,7 +153,7 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     <div
       ref={bubbleRef}
       data-message-id={message.id}
-      className={`flex ${showSender ? "mt-3" : "mt-0.5"} animate-msg-in ${isMine ? "justify-end" : "justify-start"}`}
+      className={`flex ${showSender ? "mt-4" : "mt-1.5"} animate-msg-in ${isMine ? "justify-end" : "justify-start"}`}
       style={{
         transform: swipeX ? `translateX(${swipeX * 0.45}px)` : undefined,
         transition: swiping ? "none" : "transform .2s ease",
