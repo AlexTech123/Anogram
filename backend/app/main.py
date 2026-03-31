@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers import auth, chats, messages, users
 from app.websocket.chat_ws import chat_websocket
+from app.websocket.global_ws import global_websocket
 
 app = FastAPI(title="Anogram")
 
@@ -22,5 +23,10 @@ app.include_router(messages.router, prefix="/api")
 
 
 @app.websocket("/ws/{chat_id}")
-async def websocket_endpoint(websocket: WebSocket, chat_id: int, token: str):
+async def ws_chat(websocket: WebSocket, chat_id: int, token: str):
     await chat_websocket(websocket, chat_id, token)
+
+
+@app.websocket("/ws/global")
+async def ws_global(websocket: WebSocket, token: str):
+    await global_websocket(websocket, token)

@@ -23,39 +23,31 @@ export default function MessageBubble({ message }) {
   }
 
   return (
-    <div className={`flex mb-1 animate-msg-in ${isMine ? "justify-end" : "justify-start"}`}>
+    <div className={`flex mb-0.5 animate-msg-in ${isMine ? "justify-end" : "justify-start"}`}>
       <div className={`max-w-[75%] sm:max-w-[60%] flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-        {/* Sender name — only for incoming */}
         {!isMine && (
           <span className="text-xs font-semibold mb-1 px-3" style={{ color: "var(--accent)" }}>
             @{message.sender_username}
           </span>
         )}
 
-        {/* Bubble */}
-        <div
-          className={isMine ? "bubble-out" : "bubble-in"}
-          style={{ padding: "8px 12px 6px" }}
-        >
-          {/* Message text */}
-          <p className="text-sm leading-relaxed break-words whitespace-pre-wrap" style={{
-            color: isMine ? "#fff" : "var(--text-primary)",
-            paddingRight: "44px",  // space for meta
-          }}>
+        <div className={isMine ? "bubble-out" : "bubble-in"} style={{ padding: "7px 10px 5px 12px" }}>
+          {/* Text */}
+          <p className="text-sm leading-relaxed break-words whitespace-pre-wrap"
+            style={{ color: isMine ? "#fff" : "var(--text-primary)" }}>
             {message.is_deleted
               ? <em style={{ opacity: .5 }}>Message deleted</em>
               : message.content}
           </p>
 
-          {/* Time + ticks — positioned inside bubble, bottom-right */}
-          <div className="flex items-center justify-end gap-1 -mt-3 float-right ml-2" style={{ minWidth: 42 }}>
-            <span className="text-xs" style={{ color: isMine ? "rgba(255,255,255,.55)" : "var(--text-muted)" }}>
+          {/* Meta — sits on its own line below text, right-aligned */}
+          <div className="flex items-center justify-end gap-1" style={{ marginTop: 3 }}>
+            <span className="text-xs select-none"
+              style={{ color: isMine ? "rgba(255,255,255,.55)" : "var(--text-muted)", lineHeight: 1 }}>
               {formatTime(message.created_at)}
             </span>
             {isMine && <Ticks read={isRead} />}
           </div>
-
-          <div className="clear-both" />
         </div>
       </div>
     </div>
@@ -63,11 +55,13 @@ export default function MessageBubble({ message }) {
 }
 
 function Ticks({ read }) {
-  const color = read ? "#6bc5f8" : "rgba(255,255,255,.45)";
+  const color = read ? "#6bc5f8" : "rgba(255,255,255,.5)";
   return (
-    <svg viewBox="0 0 16 11" style={{ width: 15, height: 11, flexShrink: 0, transition: "all .3s" }}>
-      <polyline points="1,5.5 4.5,9 10,3" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-      <polyline points="5,5.5 8.5,9 14,3" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg viewBox="0 0 16 11" style={{ width: 15, height: 10, flexShrink: 0, transition: "fill .3s, stroke .3s" }}>
+      <polyline points="1,5.5 4.5,9 10,3"
+        fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+      <polyline points="5,5.5 8.5,9 14,3"
+        fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

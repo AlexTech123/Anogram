@@ -1,7 +1,5 @@
 from datetime import datetime
-
 from pydantic import BaseModel
-
 from app.schemas.user import UserPublic
 
 
@@ -32,6 +30,8 @@ class ChatOut(BaseModel):
     created_by: int | None
     created_at: datetime
     last_message: LastMessageOut | None = None
+    partner_username: str | None = None
+    unread_count: int = 0
     model_config = {"from_attributes": True}
 
 

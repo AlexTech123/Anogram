@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.core.websocket_manager import manager
+from app.core.global_ws_manager import global_manager
 from app.database import SessionLocal
 from app.models.chat_member import ChatMember
 from app.models.user import User
@@ -15,7 +16,6 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
     user_id: int | None = None
 
     try:
-        # ── Authenticate ──────────────────────────────────────────────────────
         try:
             payload = decode_access_token(token)
             user_id = int(payload.get("sub"))
@@ -37,23 +37,19 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
             await websocket.close(code=4003)
             return
 
-        # ── Connect ───────────────────────────────────────────────────────────
         just_came_online = await manager.connect(websocket, chat_id, user_id)
 
-        # Tell the joining client who is currently online in this chat
         await manager.send_to(websocket, {
             "type": "online_status",
             "online_user_ids": manager.online_in_chat(chat_id),
         })
 
-        # Tell everyone else in the chat that this user is online
         if just_came_online:
             await manager.broadcast(chat_id, {
                 "type": "user_online",
                 "user_id": user_id,
             }, exclude_ws=websocket)
 
-        # ── Receive loop ──────────────────────────────────────────────────────
         try:
             while True:
                 data = await websocket.receive_json()
@@ -63,8 +59,9 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                     content = (data.get("content") or "").strip()
                     if not content:
                         continue
+
                     msg = save_message(db, chat_id, user_id, content)
-                    await manager.broadcast(chat_id, {
+                    payload_out = {
                         "type": "message",
                         "message_id": msg.id,
                         "chat_id": chat_id,
@@ -72,7 +69,27 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                         "sender_username": user.username,
                         "content": content,
                         "created_at": msg.created_at.isoformat(),
-                    })
+                    }
+
+                    # Broadcast to everyone in the chat WS
+                    await manager.broadcast(chat_id, payload_out)
+
+                    # Notify all chat members via global WS
+                    # (covers members not currently viewing this chat)
+                    members = (
+                        db.query(ChatMember)
+                        .filter(ChatMember.chat_id == chat_id)
+                        .all()
+                    )
+                    for m in members:
+                        await global_manager.notify(m.user_id, {
+                            "type": "new_message",
+                            "chat_id": chat_id,
+                            "message_id": msg.id,
+                            "sender_username": user.username,
+                            "content": content,
+                            "created_at": msg.created_at.isoformat(),
+                        })
 
                 elif msg_type == "typing":
                     await manager.broadcast(chat_id, {
@@ -85,14 +102,12 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                     message_id = data.get("message_id")
                     if not isinstance(message_id, int):
                         continue
-                    # Persist only if advancing
                     if (
                         membership.last_read_message_id is None
                         or message_id > membership.last_read_message_id
                     ):
                         membership.last_read_message_id = message_id
                         db.commit()
-                    # Broadcast receipt to other members
                     await manager.broadcast(chat_id, {
                         "type": "read_receipt",
                         "user_id": user_id,

@@ -8,24 +8,52 @@ from app.models.user import User
 from app.schemas.chat import ChatCreate, ChatOut, LastMessageOut
 
 
-def _attach_last_message(db: Session, chat: Chat) -> ChatOut:
+def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
+    membership = db.query(ChatMember).filter(
+        ChatMember.chat_id == chat.id, ChatMember.user_id == current_user_id
+    ).first()
+
+    # Last message
     last = (
         db.query(Message)
         .filter(Message.chat_id == chat.id, Message.is_deleted == False)
         .order_by(Message.created_at.desc())
         .first()
     )
-    out = ChatOut.model_validate(chat)
+    last_msg = None
     if last:
-        sender_username = None
-        if last.sender_id:
-            u = db.get(User, last.sender_id)
-            sender_username = u.username if u else None
-        out.last_message = LastMessageOut(
+        u = db.get(User, last.sender_id) if last.sender_id else None
+        last_msg = LastMessageOut(
             content=last.content,
-            sender_username=sender_username,
+            sender_username=u.username if u else None,
             created_at=last.created_at,
         )
+
+    # Partner username for DMs
+    partner_username = None
+    if chat.chat_type == "dm":
+        other = db.query(ChatMember).filter(
+            ChatMember.chat_id == chat.id, ChatMember.user_id != current_user_id
+        ).first()
+        if other:
+            u = db.get(User, other.user_id)
+            partner_username = u.username if u else None
+
+    # Unread count — messages from others newer than last_read
+    last_read_id = membership.last_read_message_id if membership else None
+    unread_q = db.query(Message).filter(
+        Message.chat_id == chat.id,
+        Message.is_deleted == False,
+        Message.sender_id != current_user_id,
+    )
+    if last_read_id is not None:
+        unread_q = unread_q.filter(Message.id > last_read_id)
+    unread_count = unread_q.count()
+
+    out = ChatOut.model_validate(chat)
+    out.last_message = last_msg
+    out.partner_username = partner_username
+    out.unread_count = unread_count
     return out
 
 
@@ -37,7 +65,7 @@ def get_user_chats(db: Session, user_id: int) -> list[ChatOut]:
         .order_by(Chat.created_at.desc())
         .all()
     )
-    return [_attach_last_message(db, c) for c in chats]
+    return [_build_chat_out(db, c, user_id) for c in chats]
 
 
 def create_chat(db: Session, data: ChatCreate, creator_id: int) -> Chat:
@@ -78,10 +106,9 @@ def get_chat_or_403(db: Session, chat_id: int, user_id: int) -> Chat:
     chat = db.get(Chat, chat_id)
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
-    member = db.query(ChatMember).filter(
+    if not db.query(ChatMember).filter(
         ChatMember.chat_id == chat_id, ChatMember.user_id == user_id
-    ).first()
-    if not member:
+    ).first():
         raise HTTPException(status_code=403, detail="Not a member of this chat")
     return chat
 
@@ -95,7 +122,9 @@ def add_member(db: Session, chat_id: int, user_id: int, requester_id: int) -> Ch
     ).first()
     if not req or req.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can add members")
-    if db.query(ChatMember).filter(ChatMember.chat_id == chat_id, ChatMember.user_id == user_id).first():
+    if db.query(ChatMember).filter(
+        ChatMember.chat_id == chat_id, ChatMember.user_id == user_id
+    ).first():
         raise HTTPException(status_code=400, detail="User already a member")
     db.add(ChatMember(chat_id=chat_id, user_id=user_id, role="member"))
     db.commit()
@@ -113,7 +142,9 @@ def remove_member(db: Session, chat_id: int, user_id: int, requester_id: int) ->
         ).first()
         if not req or req.role != "admin":
             raise HTTPException(status_code=403, detail="Only admins can remove members")
-    m = db.query(ChatMember).filter(ChatMember.chat_id == chat_id, ChatMember.user_id == user_id).first()
+    m = db.query(ChatMember).filter(
+        ChatMember.chat_id == chat_id, ChatMember.user_id == user_id
+    ).first()
     if not m:
         raise HTTPException(status_code=404, detail="Member not found")
     db.delete(m)
