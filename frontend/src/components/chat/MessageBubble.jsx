@@ -46,6 +46,8 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     replyTimer.current = setTimeout(() => setShowReply(false), SHOW_MS);
   };
 
+  // Mine: tap1 → reply, tap2 → delete, tap3 → hide
+  // Other: tap → reply
   const handleBubbleClick = () => {
     if (isMine) {
       if (!showReply && !showDelete) { armReply(); return; }
@@ -96,33 +98,38 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     );
   }
 
-  // Shared action button style
-  const actionStyle = (show, bg, shadow) => ({
-    background: bg,
-    opacity: show ? 1 : 0,
-    transform: show ? "scale(1)" : "scale(0.5)",
-    pointerEvents: show ? "auto" : "none",
-    boxShadow: show ? shadow : "none",
-    transition: "opacity .15s, transform .15s",
-    flexShrink: 0,
-    width: 28, height: 28,
-    borderRadius: "50%",
-    display: "flex", alignItems: "center", justifyContent: "center",
-  });
+  const ActionBtn = ({ show, onClick, children, color, shadow }) => (
+    <button
+      onClick={onClick}
+      onMouseDown={e => e.preventDefault()}
+      className="flex-shrink-0 rounded-full flex items-center justify-center transition-all duration-200"
+      style={{
+        width: 28, height: 28,
+        background: color,
+        opacity: show ? 1 : 0,
+        transform: show ? "scale(1)" : "scale(0.5)",
+        pointerEvents: show ? "auto" : "none",
+        boxShadow: show ? shadow : "none",
+        alignSelf: "center",
+      }}
+    >
+      {children}
+    </button>
+  );
 
   const ReplyIcon = () => (
-    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: "white" }}>
+    <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, fill: "white" }}>
       <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
     </svg>
   );
 
   const DeleteIcon = () => deleting ? (
-    <svg style={{ width: 14, height: 14, animation: "spin .8s linear infinite" }} viewBox="0 0 24 24" fill="none">
+    <svg style={{ width: 13, height: 13, animation: "spin .8s linear infinite" }} viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2.5" strokeOpacity=".3"/>
       <path d="M12 3a9 9 0 0 1 9 9" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
     </svg>
   ) : (
-    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: "white" }}>
+    <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, fill: "white" }}>
       <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
     </svg>
   );
@@ -147,32 +154,28 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
           </span>
         )}
 
-        {/* Row with action buttons */}
         <div className="flex items-center gap-1.5">
-          {/* LEFT side: always reply + delete (for mine), just reply (for others) */}
+          {/*
+            Mine:  [reply] [delete] [bubble →]
+            Other: [← bubble] [reply]
+          */}
           {isMine && (
             <>
-              <button onClick={handleReplyClick} onMouseDown={e => e.preventDefault()}
-                style={actionStyle(showReply, "rgba(124,111,255,.85)", "0 2px 10px rgba(124,111,255,.5)")}>
+              <ActionBtn show={showReply} onClick={handleReplyClick}
+                color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
                 <ReplyIcon />
-              </button>
-              <button onClick={handleDelete} onMouseDown={e => e.preventDefault()} disabled={deleting}
-                style={actionStyle(showDelete, "rgba(239,68,68,.85)", "0 2px 10px rgba(239,68,68,.4)")}>
+              </ActionBtn>
+              <ActionBtn show={showDelete} onClick={handleDelete}
+                color="rgba(239,68,68,.85)" shadow="0 2px 10px rgba(239,68,68,.4)">
                 <DeleteIcon />
-              </button>
+              </ActionBtn>
             </>
-          )}
-          {!isMine && (
-            <button onClick={handleReplyClick} onMouseDown={e => e.preventDefault()}
-              style={actionStyle(showReply, "rgba(124,111,255,.85)", "0 2px 10px rgba(124,111,255,.5)")}>
-              <ReplyIcon />
-            </button>
           )}
 
           {/* Bubble */}
           <div
             className={isMine ? "bubble-out" : "bubble-in"}
-            style={{ padding: "8px 12px 6px 12px", cursor: "pointer", order: isMine ? 1 : 0 }}
+            style={{ padding: "8px 12px 6px 12px", cursor: "pointer" }}
             onClick={handleBubbleClick}
           >
             {message.reply_to && (
@@ -191,15 +194,10 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               </div>
             )}
 
-            {/* Media preview */}
-            {message.media_url && <MediaPreview message={message} />}
-
-            {message.content && (
-              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap"
-                style={{ color: isMine ? "#fff" : "var(--text-primary)" }}>
-                {message.content}
-              </p>
-            )}
+            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap"
+              style={{ color: isMine ? "#fff" : "var(--text-primary)" }}>
+              {message.content}
+            </p>
 
             <div className="flex items-center justify-end gap-1.5" style={{ marginTop: 4 }}>
               <span className="text-xs select-none"
@@ -209,45 +207,17 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               {isMine && <Ticks read={isRead} />}
             </div>
           </div>
+
+          {/* Other's reply button — right side */}
+          {!isMine && (
+            <ActionBtn show={showReply} onClick={handleReplyClick}
+              color="rgba(124,111,255,.85)" shadow="0 2px 10px rgba(124,111,255,.5)">
+              <ReplyIcon />
+            </ActionBtn>
+          )}
         </div>
       </div>
     </div>
-  );
-}
-
-function MediaPreview({ message }) {
-  const { media_url, message_type } = message;
-  if (message_type === "voice") {
-    return (
-      <div className="mb-2">
-        <audio controls src={media_url} style={{ height: 32, maxWidth: 220 }} />
-      </div>
-    );
-  }
-  if (message_type === "image") {
-    return (
-      <img src={media_url} alt="" className="rounded-xl mb-2 max-w-full"
-        style={{ maxHeight: 260, objectFit: "cover", cursor: "pointer" }}
-        onClick={e => { e.stopPropagation(); window.open(media_url, "_blank"); }} />
-    );
-  }
-  if (message_type === "video") {
-    return (
-      <video controls src={media_url} className="rounded-xl mb-2 max-w-full"
-        style={{ maxHeight: 260 }} />
-    );
-  }
-  // Generic file
-  return (
-    <a href={media_url} target="_blank" rel="noreferrer"
-      className="flex items-center gap-2 mb-2 px-3 py-2 rounded-xl text-sm"
-      style={{ background: "rgba(255,255,255,.1)", color: "white", textDecoration: "none" }}
-      onClick={e => e.stopPropagation()}>
-      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
-        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-      </svg>
-      <span className="truncate">{media_url.split("/").pop()}</span>
-    </a>
   );
 }
 

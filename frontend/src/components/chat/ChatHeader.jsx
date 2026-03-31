@@ -49,7 +49,10 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename }) {
 
   if (!chat) return null;
 
-  const rawName = chat.name || "Direct Message";
+  // rawName is always the original username, never the custom nickname
+  const rawName = other?.user?.username
+    ? `@${other.user.username}`
+    : (chat.name || "Direct Message");
   const displayName = customName || rawName;
   const isOnline = other ? (onlineIds?.has(other.user_id) ?? false) : false;
   const typingList = Object.values(typingUsers);
@@ -58,7 +61,8 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename }) {
     if (!other) return;
     const saved = saveNickname(other.user_id, nameInput);
     setCustomName(saved);
-    onRename?.(saved || rawName);
+    const originalUsername = other.user?.username || rawName.replace(/^@/, "");
+    onRename?.(saved || originalUsername);
     setRenaming(false);
   };
 
@@ -66,7 +70,9 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename }) {
     if (!other) return;
     saveNickname(other.user_id, "");
     setCustomName(null);
-    onRename?.(rawName);
+    // Pass the original username (without @) so sidebar updates correctly
+    const originalUsername = other.user?.username || rawName.replace(/^@/, "");
+    onRename?.(originalUsername);
   };
 
   const handleDeleteChat = async () => {

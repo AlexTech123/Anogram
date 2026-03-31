@@ -57,7 +57,7 @@ export default function ChatPage() {
   const selectChat = async (id) => {
     setActiveChatId(id);
     setShowChat(true);
-    setChats(prev => prev.map(c => c.id === id ? { ...c, unread_count: 0 } : c));
+    // Don't zero unread here — let IntersectionObserver do it when messages are actually visible
     const { data } = await getChat(id);
     if (data.chat_type === "dm") {
       const other = data.members?.find(m => m.user_id !== user?.id);
