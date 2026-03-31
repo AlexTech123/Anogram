@@ -49,7 +49,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
         <span
           className="flex-1 font-black tracking-tight select-none"
           style={{
-            fontSize: 20,
+            fontSize: 23,
             background: "linear-gradient(90deg, #a78bfa 0%, #818cf8 60%, #60a5fa 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",

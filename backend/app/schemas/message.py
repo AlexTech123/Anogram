@@ -19,10 +19,6 @@ class MessageOut(BaseModel):
     created_at: datetime
     sender_username: str | None = None
     reply_to: ReplyInfo | None = None
+    media_url: str | None = None
+    file_size: int | None = None
     model_config = {"from_attributes": True}
-
-
-class WSMessagePayload(BaseModel):
-    type: str
-    content: str | None = None
-    reply_to_id: int | None = None

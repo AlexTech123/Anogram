@@ -23,6 +23,8 @@ services:
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 10080
       CORS_ORIGINS: '["*"]'
+    volumes:
+      - media_data:/app/media
     depends_on:
       postgres:
         condition: service_healthy
@@ -41,3 +43,4 @@ services:
 
 volumes:
   postgres_data:
+  media_data:

@@ -37,6 +37,8 @@ def _build_message_out(db: Session, msg: Message) -> MessageOut:
         created_at=msg.created_at,
         sender_username=sender_username,
         reply_to=reply_to,
+        media_url=msg.media_url,
+        file_size=msg.file_size,
     )
 
 

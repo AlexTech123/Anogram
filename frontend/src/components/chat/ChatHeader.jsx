@@ -5,44 +5,47 @@ import { useGlobalWS } from "../../context/GlobalWSContext";
 import { Avatar } from "../sidebar/Sidebar";
 import { deleteChat } from "../../api/chats";
 
-// LocalStorage-based custom nicknames
 const NK_KEY = "anogram_nicknames";
-function getNickname(userId) {
+
+export function getNickname(userId) {
   try { return JSON.parse(localStorage.getItem(NK_KEY) || "{}")[String(userId)] || null; }
   catch { return null; }
 }
-function setNickname(userId, name) {
+
+export function saveNickname(userId, name) {
   try {
     const all = JSON.parse(localStorage.getItem(NK_KEY) || "{}");
-    if (name.trim()) all[String(userId)] = name.trim();
+    if (name && name.trim()) all[String(userId)] = name.trim();
     else delete all[String(userId)];
     localStorage.setItem(NK_KEY, JSON.stringify(all));
-  } catch {}
+    return all[String(userId)] || null;
+  } catch { return null; }
 }
 
-export default function ChatHeader({ chat, onBack, onChatDeleted }) {
+export default function ChatHeader({ chat, onBack, onChatDeleted, onRename }) {
   const { user } = useAuth();
   const { typingUsers } = useWebSocket();
   const { onlineIds } = useGlobalWS();
   const [showMenu, setShowMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  // Custom nickname state
-  const other = chat?.members?.find(m => m.user_id !== user?.id);
-  const [editing, setEditing] = useState(false);
-  const [customName, setCustomName] = useState(() =>
-    other ? getNickname(other.user_id) : null
-  );
+  const [renaming, setRenaming] = useState(false);
+  const [nameInput, setNameInput] = useState("");
   const inputRef = useRef(null);
+
+  const other = chat?.members?.find(m => m.user_id !== user?.id);
+  const [customName, setCustomName] = useState(() => other ? getNickname(other.user_id) : null);
 
   useEffect(() => {
     if (other) setCustomName(getNickname(other.user_id));
   }, [chat?.id]);
 
   useEffect(() => {
-    if (editing) setTimeout(() => inputRef.current?.focus(), 30);
-  }, [editing]);
+    if (renaming) {
+      setNameInput(customName || "");
+      setTimeout(() => inputRef.current?.focus(), 30);
+    }
+  }, [renaming]);
 
   if (!chat) return null;
 
@@ -51,9 +54,19 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
   const isOnline = other ? (onlineIds?.has(other.user_id) ?? false) : false;
   const typingList = Object.values(typingUsers);
 
-  const saveName = () => {
-    if (other) setNickname(other.user_id, customName || "");
-    setEditing(false);
+  const commitRename = () => {
+    if (!other) return;
+    const saved = saveNickname(other.user_id, nameInput);
+    setCustomName(saved);
+    onRename?.(saved || rawName);
+    setRenaming(false);
+  };
+
+  const clearNickname = () => {
+    if (!other) return;
+    saveNickname(other.user_id, "");
+    setCustomName(null);
+    onRename?.(rawName);
   };
 
   const handleDeleteChat = async () => {
@@ -64,10 +77,9 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
   };
 
   return (
-    <div
-      className="flex-shrink-0 flex items-center gap-3 px-4"
-      style={{ height: 58, background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}
-    >
+    <div className="flex-shrink-0 flex items-center gap-3 px-4"
+      style={{ height: 58, background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}>
+
       {/* Back — mobile */}
       <button onClick={onBack}
         className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
@@ -81,37 +93,18 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
 
       <Avatar name={displayName} size={9} online={isOnline} />
 
-      {/* Name — click to edit */}
       <div className="flex-1 min-w-0">
-        {editing ? (
-          <input
-            ref={inputRef}
-            className="bg-transparent outline-none border-b text-sm font-semibold w-full"
-            style={{ color: "var(--text-primary)", borderColor: "var(--accent)", maxWidth: 180 }}
-            value={customName || ""}
-            placeholder={rawName}
-            onChange={e => setCustomName(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") saveName(); if (e.key === "Escape") { setCustomName(getNickname(other?.user_id)); setEditing(false); } }}
-            onBlur={saveName}
-            maxLength={40}
-          />
-        ) : (
-          <button
-            onClick={() => other && setEditing(true)}
-            className="text-left w-full group"
-            title={other ? "Click to rename" : undefined}
-          >
-            <p className="font-semibold text-sm truncate flex items-center gap-1.5" style={{ color: "var(--text-primary)" }}>
-              {displayName}
-              {other && (
-                <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0"
-                  style={{ color: "var(--text-muted)" }}>
-                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                </svg>
-              )}
-            </p>
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>
+            {displayName}
+          </p>
+          {customName && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: "rgba(124,111,255,.15)", color: "var(--accent-light)", fontSize: 10 }}>
+              renamed
+            </span>
+          )}
+        </div>
 
         {typingList.length > 0 ? (
           <div className="flex items-center gap-1.5">
@@ -131,24 +124,10 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
         )}
       </div>
 
-      {/* Custom name indicator */}
-      {customName && !editing && (
-        <button
-          onClick={() => { setCustomName(""); setNickname(other?.user_id, ""); }}
-          title="Remove custom name"
-          className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full transition-all"
-          style={{ background: "rgba(124,111,255,.15)", color: "var(--accent-light)" }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,.15)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.textContent = "✕ reset"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "rgba(124,111,255,.15)"; e.currentTarget.style.color = "var(--accent-light)"; e.currentTarget.textContent = "custom"; }}
-        >
-          custom
-        </button>
-      )}
-
       {/* More menu */}
       <div className="relative flex-shrink-0">
         <button
-          onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); }}
+          onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); setRenaming(false); }}
           className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
           style={{ color: "var(--text-secondary)" }}
           onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
@@ -161,37 +140,77 @@ export default function ChatHeader({ chat, onBack, onChatDeleted }) {
 
         {showMenu && (
           <div
-            className="absolute right-0 top-full mt-2 rounded-2xl shadow-2xl z-50 py-1.5 animate-pop"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--bg-elevated)", minWidth: 180 }}
-            onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}
+            className="absolute right-0 top-full mt-2 rounded-2xl shadow-2xl z-50 animate-pop overflow-hidden"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--bg-elevated)", minWidth: 210 }}
+            onMouseLeave={() => { if (!renaming) { setShowMenu(false); setConfirmDelete(false); } }}
           >
-            {/* Rename option */}
+            {/* Rename form */}
             {other && (
-              <button
-                onClick={() => { setEditing(true); setShowMenu(false); }}
-                className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 rounded-xl mx-1 transition-all"
-                style={{ width: "calc(100% - 8px)", color: "var(--text-secondary)" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+              <div style={{ borderBottom: "1px solid var(--bg-elevated)" }}>
+                {renaming ? (
+                  <div className="px-3 py-2.5 flex items-center gap-2">
+                    <input
+                      ref={inputRef}
+                      className="flex-1 bg-transparent outline-none text-sm rounded-lg px-2 py-1.5 min-w-0"
+                      style={{ color: "var(--text-primary)", background: "var(--bg-elevated)", border: "1px solid var(--accent)" }}
+                      placeholder={rawName}
+                      value={nameInput}
+                      onChange={e => setNameInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") commitRename(); if (e.key === "Escape") setRenaming(false); }}
+                      maxLength={40}
+                    />
+                    <button onClick={commitRename}
+                      className="text-xs px-2.5 py-1.5 rounded-lg font-semibold flex-shrink-0"
+                      style={{ background: "var(--accent)", color: "#fff" }}>
+                      Save
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setRenaming(true)}
+                    className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 transition-all"
+                    style={{ color: "var(--text-secondary)" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                  >
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                    Rename contact
+                    {customName && <span className="ml-auto text-xs opacity-50">"{customName}"</span>}
+                  </button>
+                )}
+
+                {customName && !renaming && (
+                  <button
+                    onClick={clearNickname}
+                    className="w-full text-left px-4 py-2 text-xs flex items-center gap-2 transition-all"
+                    style={{ color: "var(--text-muted)" }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "#f87171"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; }}
+                  >
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current flex-shrink-0">
+                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                    Reset to @{other.user?.username || rawName}
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="p-1.5">
+              <button onClick={handleDeleteChat} disabled={deleting}
+                className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 rounded-xl transition-all"
+                style={{ color: confirmDelete ? "#fff" : "#f87171", background: confirmDelete ? "rgba(239,68,68,.7)" : "transparent" }}
+                onMouseEnter={e => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,.1)"; }}
+                onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = "transparent"; }}
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
-                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                 </svg>
-                Rename contact
+                {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete chat"}
               </button>
-            )}
-            <button
-              onClick={handleDeleteChat} disabled={deleting}
-              className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2.5 rounded-xl mx-1 transition-all"
-              style={{ width: "calc(100% - 8px)", color: confirmDelete ? "#fff" : "#f87171", background: confirmDelete ? "rgba(239,68,68,.7)" : "transparent" }}
-              onMouseEnter={e => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,.1)"; }}
-              onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = "transparent"; }}
-            >
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
-                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-              </svg>
-              {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete chat"}
-            </button>
+            </div>
           </div>
         )}
       </div>

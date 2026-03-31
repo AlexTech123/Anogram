@@ -35,7 +35,7 @@ function DateDivider({ date }) {
   );
 }
 
-export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead, onUnreadIncrement }) {
+export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead, onUnreadIncrement, onRename }) {
   const { user } = useAuth();
   const { messages: fetched, loading, newUnseenCount, setNewUnseenCount, markSeen } = useMessages(chat?.id);
   const [messages, setMessages] = useState([]);
@@ -47,6 +47,9 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
   const highestSeenId = useRef(null);
   // Keep atBottom in a ref so useEffect for incoming messages always sees current value
   const atBottomRef = useRef(true);
+  // Keep callback in ref so the effect closure always calls the latest version
+  const onUnreadIncrementRef = useRef(onUnreadIncrement);
+  useEffect(() => { onUnreadIncrementRef.current = onUnreadIncrement; }, [onUnreadIncrement]);
 
   useEffect(() => { setMessages(fetched); setReplyTo(null); }, [fetched]);
 
@@ -67,7 +70,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
     if (lastMessage.sender_id === user?.id) return;
     if (!atBottomRef.current) {
       setNewUnseenCount(prev => prev + 1);
-      onUnreadIncrement?.(chat.id);
+      onUnreadIncrementRef.current?.(chat.id);
     }
   }, [lastMessage]);
 
@@ -136,7 +139,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden" style={{ background: "var(--bg-base)" }}>
-      <ChatHeader chat={chat} onBack={onBack} onChatDeleted={onChatDeleted} />
+      <ChatHeader chat={chat} onBack={onBack} onChatDeleted={onChatDeleted} onRename={onRename} />
 
       <div className="relative flex-1 overflow-hidden">
         <div
@@ -222,7 +225,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
         )}
       </div>
 
-      <MessageInput replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
+      <MessageInput replyTo={replyTo} onCancelReply={() => setReplyTo(null)} chatId={chat?.id} />
     </div>
   );
 }

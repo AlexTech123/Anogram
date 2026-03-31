@@ -47,9 +47,10 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser, o
           <li key={chat.id} className="animate-slide-in px-2" style={{ animationDelay: `${i * 25}ms` }}>
             <button
               onClick={() => onSelect(chat.id)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150 active:scale-[.98]"
+              className="w-full flex items-center gap-3 px-3 rounded-2xl transition-all duration-150 active:scale-[.98]"
+              style={{ paddingTop: 7, paddingBottom: 7, ...(isActive ? { background: "var(--bg-active)" } : {}) }}
               style={{ background: isActive ? "var(--bg-active)" : "transparent" }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg-hover)"; }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,.04)"; }}
               onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
             >
               <Avatar name={avatarName} size={12} online={partnerOnline} />

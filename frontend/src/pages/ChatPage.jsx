@@ -78,6 +78,12 @@ export default function ChatPage() {
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, unread_count: 0 } : c));
   }, []);
 
+  const handleUnreadIncrement = useCallback((chatId) => {
+    setChats(prev => prev.map(c =>
+      c.id === chatId ? { ...c, unread_count: (c.unread_count || 0) + 1 } : c
+    ));
+  }, []);
+
   const handleChatDeleted = (id) => {
     setChats(prev => prev.filter(c => c.id !== id));
     setActiveChatId(null); setActiveChat(null); setShowChat(false);
@@ -108,9 +114,14 @@ export default function ChatPage() {
             onBack={goBack}
             onChatDeleted={handleChatDeleted}
             onMessagesRead={handleMessagesRead}
-            onUnreadIncrement={(chatId) =>
-              setChats(prev => prev.map(c => c.id === chatId ? { ...c, unread_count: (c.unread_count || 0) + 1 } : c))
-            }
+            onUnreadIncrement={handleUnreadIncrement}
+            onRename={(newName) => {
+              // Update display name in sidebar and active chat
+              setChats(prev => prev.map(c =>
+                c.id === activeChatId ? { ...c, partner_username: newName.replace(/^@/, "") } : c
+              ));
+              setActiveChat(prev => prev ? { ...prev, name: newName } : prev);
+            }}
           />
         }
       />

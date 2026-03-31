@@ -32,11 +32,13 @@ export function useMessages(chatId) {
           chat_id: lastMessage.chat_id,
           sender_id: lastMessage.sender_id,
           sender_username: lastMessage.sender_username,
-          content: lastMessage.content,
+          content: lastMessage.content || "",
           created_at: lastMessage.created_at,
-          message_type: "text",
+          message_type: lastMessage.message_type || "text",
           is_deleted: false,
           reply_to: lastMessage.reply_to || null,
+          media_url: lastMessage.media_url || null,
+          file_size: lastMessage.file_size || null,
         },
       ];
     });

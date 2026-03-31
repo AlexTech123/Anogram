@@ -72,6 +72,8 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                         "content": content,
                         "created_at": msg.created_at.isoformat(),
                         "reply_to": msg_out.reply_to.model_dump() if msg_out.reply_to else None,
+                        "message_type": msg.message_type,
+                        "media_url": msg.media_url,
                     }
                     await manager.broadcast(chat_id, payload_ws)
 
@@ -100,11 +102,19 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                     if membership.last_read_message_id is None or message_id > membership.last_read_message_id:
                         membership.last_read_message_id = message_id
                         db.commit()
-                    await manager.broadcast(chat_id, {
-                        "type": "read_receipt",
-                        "user_id": user_id,
-                        "message_id": message_id,
-                    }, exclude_ws=websocket)
+                    # Broadcast read_receipt only to OTHER users in the chat
+                    # (not back to the same account on other devices — that would
+                    #  falsely mark messages as read from the sender's perspective)
+                    for ws, uid in list(manager.active.get(chat_id, [])):
+                        if uid != user_id and ws is not websocket:
+                            try:
+                                await ws.send_json({
+                                    "type": "read_receipt",
+                                    "user_id": user_id,
+                                    "message_id": message_id,
+                                })
+                            except Exception:
+                                pass
 
         except WebSocketDisconnect:
             pass

@@ -46,9 +46,6 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     replyTimer.current = setTimeout(() => setShowReply(false), SHOW_MS);
   };
 
-  // Tap bubble:
-  // - own:   1st tap → delete, 2nd tap → reply, 3rd → hide
-  // - other: tap → reply
   const handleBubbleClick = () => {
     if (isMine) {
       if (!showReply && !showDelete) { armReply(); return; }
@@ -71,14 +68,11 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
   const handleReplyClick = (e) => {
     e.stopPropagation();
     onReply?.(message);
-    setShowReply(false);
-    clearTimeout(replyTimer.current);
+    setShowReply(false); clearTimeout(replyTimer.current);
   };
 
   // Swipe left → reply
-  const onTouchStart = (e) => {
-    touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
+  const onTouchStart = (e) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
   const onTouchMove = (e) => {
     if (!touch.current) return;
     const dx = e.touches[0].clientX - touch.current.x;
@@ -102,51 +96,35 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     );
   }
 
-  const ReplyBtn = ({ onClick, show }) => (
-    <button
-      onClick={onClick}
-      onMouseDown={e => e.preventDefault()}
-      className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200"
-      style={{
-        background: "rgba(124,111,255,.85)",
-        opacity: show ? 1 : 0,
-        transform: show ? "scale(1)" : "scale(0.5)",
-        pointerEvents: show ? "auto" : "none",
-        boxShadow: show ? "0 2px 10px rgba(124,111,255,.5)" : "none",
-        alignSelf: "center",
-      }}
-    >
-      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white">
-        <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
-      </svg>
-    </button>
+  // Shared action button style
+  const actionStyle = (show, bg, shadow) => ({
+    background: bg,
+    opacity: show ? 1 : 0,
+    transform: show ? "scale(1)" : "scale(0.5)",
+    pointerEvents: show ? "auto" : "none",
+    boxShadow: show ? shadow : "none",
+    transition: "opacity .15s, transform .15s",
+    flexShrink: 0,
+    width: 28, height: 28,
+    borderRadius: "50%",
+    display: "flex", alignItems: "center", justifyContent: "center",
+  });
+
+  const ReplyIcon = () => (
+    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: "white" }}>
+      <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
+    </svg>
   );
 
-  const DeleteBtn = ({ onClick, show }) => (
-    <button
-      onClick={onClick}
-      onMouseDown={e => e.preventDefault()}
-      disabled={deleting}
-      className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200"
-      style={{
-        background: "rgba(239,68,68,.85)",
-        opacity: show ? 1 : 0,
-        transform: show ? "scale(1)" : "scale(0.5)",
-        pointerEvents: show ? "auto" : "none",
-        boxShadow: show ? "0 2px 10px rgba(239,68,68,.4)" : "none",
-        alignSelf: "center",
-      }}
-    >
-      {deleting
-        ? <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2.5" strokeOpacity=".3"/>
-            <path d="M12 3a9 9 0 0 1 9 9" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-          </svg>
-        : <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white">
-            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-          </svg>
-      }
-    </button>
+  const DeleteIcon = () => deleting ? (
+    <svg style={{ width: 14, height: 14, animation: "spin .8s linear infinite" }} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2.5" strokeOpacity=".3"/>
+      <path d="M12 3a9 9 0 0 1 9 9" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: "white" }}>
+      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+    </svg>
   );
 
   return (
@@ -162,23 +140,39 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <div className={`max-w-[75%] sm:max-w-[62%] flex flex-col ${isMine ? "items-end" : "items-start"}`}>
+      <div className={`flex flex-col ${isMine ? "items-end" : "items-start"} max-w-[75%] sm:max-w-[62%]`}>
         {!isMine && showSender && (
           <span className="text-xs font-semibold mb-1 px-3" style={{ color: "var(--accent-light)" }}>
             @{message.sender_username}
           </span>
         )}
 
-        <div className="flex items-center gap-2">
-          {/* Left buttons for own messages: reply */}
+        {/* Row with action buttons */}
+        <div className="flex items-center gap-1.5">
+          {/* LEFT side: always reply + delete (for mine), just reply (for others) */}
           {isMine && (
-            <ReplyBtn onClick={handleReplyClick} show={showReply} />
+            <>
+              <button onClick={handleReplyClick} onMouseDown={e => e.preventDefault()}
+                style={actionStyle(showReply, "rgba(124,111,255,.85)", "0 2px 10px rgba(124,111,255,.5)")}>
+                <ReplyIcon />
+              </button>
+              <button onClick={handleDelete} onMouseDown={e => e.preventDefault()} disabled={deleting}
+                style={actionStyle(showDelete, "rgba(239,68,68,.85)", "0 2px 10px rgba(239,68,68,.4)")}>
+                <DeleteIcon />
+              </button>
+            </>
+          )}
+          {!isMine && (
+            <button onClick={handleReplyClick} onMouseDown={e => e.preventDefault()}
+              style={actionStyle(showReply, "rgba(124,111,255,.85)", "0 2px 10px rgba(124,111,255,.5)")}>
+              <ReplyIcon />
+            </button>
           )}
 
           {/* Bubble */}
           <div
             className={isMine ? "bubble-out" : "bubble-in"}
-            style={{ padding: "8px 12px 6px 12px", cursor: "pointer" }}
+            style={{ padding: "8px 12px 6px 12px", cursor: "pointer", order: isMine ? 1 : 0 }}
             onClick={handleBubbleClick}
           >
             {message.reply_to && (
@@ -197,10 +191,15 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               </div>
             )}
 
-            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap"
-              style={{ color: isMine ? "#fff" : "var(--text-primary)" }}>
-              {message.content}
-            </p>
+            {/* Media preview */}
+            {message.media_url && <MediaPreview message={message} />}
+
+            {message.content && (
+              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap"
+                style={{ color: isMine ? "#fff" : "var(--text-primary)" }}>
+                {message.content}
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-1.5" style={{ marginTop: 4 }}>
               <span className="text-xs select-none"
@@ -210,38 +209,59 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               {isMine && <Ticks read={isRead} />}
             </div>
           </div>
-
-          {/* Right buttons */}
-          {/* Own message: show delete (from tap), reply shown on left */}
-          {isMine && (
-            <DeleteBtn onClick={handleDelete} show={showDelete} />
-          )}
-          {/* Other's message: reply button on right */}
-          {!isMine && (
-            <ReplyBtn onClick={handleReplyClick} show={showReply} />
-          )}
         </div>
       </div>
     </div>
   );
 }
 
-function Ticks({ read }) {
-  const color = read ? "#a78bfa" : "rgba(255,255,255,.45)";
-  if (!read) {
+function MediaPreview({ message }) {
+  const { media_url, message_type } = message;
+  if (message_type === "voice") {
     return (
-      <svg viewBox="0 0 10 11" style={{ width: 10, height: 10, flexShrink: 0 }}>
-        <polyline points="1,5.5 4,8.5 9,3"
-          fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
+      <div className="mb-2">
+        <audio controls src={media_url} style={{ height: 32, maxWidth: 220 }} />
+      </div>
     );
   }
+  if (message_type === "image") {
+    return (
+      <img src={media_url} alt="" className="rounded-xl mb-2 max-w-full"
+        style={{ maxHeight: 260, objectFit: "cover", cursor: "pointer" }}
+        onClick={e => { e.stopPropagation(); window.open(media_url, "_blank"); }} />
+    );
+  }
+  if (message_type === "video") {
+    return (
+      <video controls src={media_url} className="rounded-xl mb-2 max-w-full"
+        style={{ maxHeight: 260 }} />
+    );
+  }
+  // Generic file
+  return (
+    <a href={media_url} target="_blank" rel="noreferrer"
+      className="flex items-center gap-2 mb-2 px-3 py-2 rounded-xl text-sm"
+      style={{ background: "rgba(255,255,255,.1)", color: "white", textDecoration: "none" }}
+      onClick={e => e.stopPropagation()}>
+      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
+        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+      </svg>
+      <span className="truncate">{media_url.split("/").pop()}</span>
+    </a>
+  );
+}
+
+function Ticks({ read }) {
+  const color = read ? "#a78bfa" : "rgba(255,255,255,.45)";
+  if (!read) return (
+    <svg viewBox="0 0 10 11" style={{ width: 10, height: 10, flexShrink: 0 }}>
+      <polyline points="1,5.5 4,8.5 9,3" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
   return (
     <svg viewBox="0 0 16 11" style={{ width: 15, height: 10, flexShrink: 0, transition: "stroke .4s" }}>
-      <polyline points="1,5.5 4.5,9 10,3"
-        fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-      <polyline points="5,5.5 8.5,9 14,3"
-        fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+      <polyline points="1,5.5 4.5,9 10,3" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+      <polyline points="5,5.5 8.5,9 14,3" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

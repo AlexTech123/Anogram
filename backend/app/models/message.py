@@ -12,14 +12,14 @@ class Message(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     chat_id: Mapped[int] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"), nullable=False)
     sender_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
-    content: Mapped[str] = mapped_column(Text, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
     message_type: Mapped[str] = mapped_column(String(20), default="text", nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     reply_to_id: Mapped[int | None] = mapped_column(
-        BigInteger,
-        ForeignKey("messages.id", ondelete="SET NULL"),
-        nullable=True,
+        BigInteger, ForeignKey("messages.id", ondelete="SET NULL"), nullable=True
     )
+    media_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
