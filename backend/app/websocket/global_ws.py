@@ -40,7 +40,7 @@ async def global_websocket(websocket: WebSocket, token: str) -> None:
 
         try:
             while True:
-                await websocket.receive_text()
+                await websocket.receive_text()  # accept pings, ignore content
         except WebSocketDisconnect:
             pass
     finally:

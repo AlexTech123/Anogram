@@ -49,6 +49,9 @@ async def chat_websocket(websocket: WebSocket, chat_id: int, token: str) -> None
                 data = await websocket.receive_json()
                 msg_type = data.get("type")
 
+                if msg_type == "ping":
+                    continue
+
                 if msg_type == "message":
                     content = (data.get("content") or "").strip()
                     if not content:

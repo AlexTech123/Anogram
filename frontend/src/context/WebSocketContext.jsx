@@ -34,7 +34,16 @@ export function WebSocketProvider({ chatId, initialReadId, children }) {
     ws.onmessage = ({ data }) => { try { dispatch(JSON.parse(data)); } catch {} };
     ws.onerror = e => console.error("WS error", e);
 
+    // Keep-alive ping every 25s
+    let pingId = null;
+    ws.onopen = () => {
+      pingId = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "ping" }));
+      }, 25_000);
+    };
+
     return () => {
+      clearInterval(pingId);
       ws.close();
       wsRef.current = null;
       if (typingThrottle.current) clearTimeout(typingThrottle.current);

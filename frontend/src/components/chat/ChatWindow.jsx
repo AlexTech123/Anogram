@@ -109,7 +109,14 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
   }, [chat?.id]);
 
   const handleDeleted = (id) => setMessages(prev => prev.filter(m => m.id !== id));
-  const handleContainerClick = (e) => { if (e.target === listRef.current) onBack(); };
+
+  // Mobile only: tap on empty scroll area goes back
+  // Desktop: deactivation is only via "All chats" button
+  const handleContainerClick = (e) => {
+    if (e.target !== listRef.current) return;
+    // Check if we're on mobile (sm breakpoint = 640px)
+    if (window.innerWidth < 640) onBack();
+  };
 
   if (!chat) {
     return (

@@ -16,9 +16,18 @@ export function GlobalWSProvider({ children }) {
 
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
 
+    let pingInterval = null;
+
     const connect = () => {
       const ws = new WebSocket(`${proto}://${window.location.host}/ws/global?token=${token}`);
       wsRef.current = ws;
+
+      // Ping every 25s to keep connection alive through proxies
+      ws.onopen = () => {
+        pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) ws.send("ping");
+        }, 25_000);
+      };
 
       ws.onmessage = ({ data }) => {
         try {
@@ -43,6 +52,7 @@ export function GlobalWSProvider({ children }) {
       };
 
       ws.onclose = (e) => {
+        clearInterval(pingInterval);
         wsRef.current = null;
         if (e.code !== 1000 && e.code !== 4001) {
           setTimeout(connect, 3000);
@@ -51,7 +61,11 @@ export function GlobalWSProvider({ children }) {
     };
 
     connect();
-    return () => { wsRef.current?.close(1000); wsRef.current = null; };
+    return () => {
+      clearInterval(pingInterval);
+      wsRef.current?.close(1000);
+      wsRef.current = null;
+    };
   }, [user]);
 
   return (

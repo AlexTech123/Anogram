@@ -25,6 +25,31 @@ export default function ChatPage() {
 
   useEffect(() => { loadChats(); }, []);
 
+  // Periodic full refresh every 30s — syncs missed events
+  useEffect(() => {
+    const id = setInterval(() => {
+      loadChats();
+      // Also re-fetch active chat messages if open
+      if (activeChatIdRef.current) {
+        getChat(activeChatIdRef.current)
+          .then(({ data }) => {
+            if (data.chat_type === "dm") {
+              const other = data.members?.find(m => m.user_id !== user?.id);
+              data.name = (() => {
+                try {
+                  const nk = JSON.parse(localStorage.getItem("anogram_nicknames") || "{}");
+                  return nk[String(other?.user_id)] || other?.user?.username || "Direct Message";
+                } catch { return other?.user?.username || "Direct Message"; }
+              })();
+            }
+            setActiveChat(data);
+          })
+          .catch(() => {});
+      }
+    }, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     if (!lastEvent) return;
 
