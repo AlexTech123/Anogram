@@ -3,87 +3,123 @@
 @tailwind utilities;
 
 :root {
-  --bg-base: #0b0f19;
-  --bg-sidebar: #111827;
-  --bg-card: #1a2236;
-  --bg-elevated: #1e2a3a;
-  --bg-input: #1e2a3a;
-  --bg-hover: #1f2f45;
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --msg-mine: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  --msg-other: #1e2a3a;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --border: #1e2d40;
-  --online: #22c55e;
+  /* Telegram dark palette */
+  --bg-base:        #0e1621;
+  --bg-sidebar:     #17212b;
+  --bg-card:        #1c2733;
+  --bg-elevated:    #242f3d;
+  --bg-input:       #17212b;
+  --bg-hover:       #202e3d;
+  --bg-active:      #2b5278;
+  --msg-out:        #2b5278;
+  --msg-out-darker: #245069;
+  --msg-in:         #182533;
+  --accent:         #2aabee;
+  --accent-dark:    #1a8fc3;
+  --accent-gradient: linear-gradient(180deg, #2aabee 0%, #1a8fc3 100%);
+  --text-primary:   #ffffff;
+  --text-secondary: #aabbc9;
+  --text-muted:     #6c7f8f;
+  --border:         #0d1723;
+  --online:         #4dcd5e;
+  --badge:          #2aabee;
+  --danger:         #e53935;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
 }
 
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a3f5a; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #3a5070; }
+::-webkit-scrollbar-thumb { background: #2a3f55; border-radius: 3px; }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-12px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@keyframes pop {
-  0% { transform: scale(0.92); opacity: 0; }
-  60% { transform: scale(1.02); }
-  100% { transform: scale(1); opacity: 1; }
+/* ── Animations ─────────────────────────────────────────────────────────── */
+@keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+@keyframes pop     { 0%{transform:scale(.95);opacity:0} 60%{transform:scale(1.01)} 100%{transform:scale(1);opacity:1} }
+@keyframes msgIn   { from{opacity:0;transform:translateY(8px) scale(.97)} to{opacity:1;transform:none} }
+@keyframes bounce-dot {
+  0%,60%,100%{transform:translateY(0);opacity:.6}
+  30%{transform:translateY(-4px);opacity:1}
 }
 
-.animate-fade-up { animation: fadeUp 0.25s ease forwards; }
-.animate-fade-in { animation: fadeIn 0.2s ease forwards; }
-.animate-slide-in { animation: slideIn 0.2s ease forwards; }
-.animate-pop { animation: pop 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.animate-fade-in  { animation: fadeIn  .18s ease forwards; }
+.animate-fade-up  { animation: fadeUp  .2s  ease forwards; }
+.animate-slide-in { animation: slideIn .2s  ease forwards; }
+.animate-pop      { animation: pop     .22s cubic-bezier(.34,1.56,.64,1) forwards; }
+.animate-msg-in   { animation: msgIn   .2s  cubic-bezier(.25,.8,.25,1) forwards; }
 
-textarea::placeholder { color: var(--text-muted); }
-textarea { caret-color: var(--accent); }
-
-kbd { font-family: inherit; }
-
+/* ── Shared components ──────────────────────────────────────────────────── */
 @layer components {
   .input {
     @apply w-full rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200;
-    background: var(--bg-input);
+    background: var(--bg-elevated);
     color: var(--text-primary);
-    border: 1.5px solid var(--border);
+    border: 1px solid transparent;
+    -webkit-appearance: none;
   }
   .input::placeholder { color: var(--text-muted); }
   .input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    box-shadow: 0 0 0 2px rgba(42,171,238,.18);
   }
 
   .btn-primary {
-    @apply w-full font-semibold py-3 rounded-xl text-sm text-white transition-all duration-200 relative overflow-hidden;
+    @apply w-full font-semibold py-3 rounded-xl text-sm text-white outline-none transition-all duration-150;
     background: var(--accent-gradient);
+    -webkit-appearance: none;
   }
   .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.08);
     transform: translateY(-1px);
-    box-shadow: 0 8px 25px rgba(99,102,241,0.4);
   }
-  .btn-primary:active:not(:disabled) { transform: translateY(0); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary:active:not(:disabled) { transform: none; filter: brightness(.95); }
+  .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+}
+
+textarea { caret-color: var(--accent); }
+textarea::placeholder { color: var(--text-muted); }
+
+/* ── Telegram message bubble tails ──────────────────────────────────────── */
+.bubble-out {
+  position: relative;
+  background: var(--msg-out);
+  color: #fff;
+  border-radius: 12px 12px 2px 12px;
+}
+.bubble-out::after {
+  content: "";
+  position: absolute;
+  bottom: 0; right: -7px;
+  width: 10px; height: 14px;
+  background: var(--msg-out);
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+
+.bubble-in {
+  position: relative;
+  background: var(--msg-in);
+  color: var(--text-primary);
+  border-radius: 12px 12px 12px 2px;
+}
+.bubble-in::before {
+  content: "";
+  position: absolute;
+  bottom: 0; left: -7px;
+  width: 10px; height: 14px;
+  background: var(--msg-in);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }

@@ -2,33 +2,22 @@ import RegisterForm from "../components/auth/RegisterForm";
 
 export default function RegisterPage() {
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 py-8"
-      style={{ background: "radial-gradient(ellipse at 60% 40%, #1a1040 0%, #0b0f19 60%)" }}
-    >
-      <div
-        className="fixed top-0 left-1/4 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", filter: "blur(40px)" }}
-      />
-
-      <div className="w-full max-w-sm animate-pop" style={{ zIndex: 10 }}>
-        <div className="flex flex-col items-center mb-8 gap-2">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black shadow-lg mb-1"
-            style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
-          >
-            A
+    <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: "var(--bg-base)" }}>
+      <div className="fixed inset-0 pointer-events-none" style={{
+        background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(42,171,238,.06) 0%, transparent 70%)"
+      }} />
+      <div className="w-full max-w-sm animate-pop relative z-10">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-lg"
+            style={{ background: "var(--accent-gradient)" }}>
+            <svg viewBox="0 0 24 24" className="w-10 h-10 fill-white">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.25.38-.51 1.07-.78 4.19-1.82 6.98-3.02 8.38-3.61 3.99-1.66 4.82-1.95 5.36-1.96.12 0 .38.03.55.18.14.12.18.29.2.45-.01.06-.01.24-.02.27z"/>
+            </svg>
           </div>
-          <h1 className="text-3xl font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
-            Anogram
-          </h1>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Create your account</p>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Create Account</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Join Anogram</p>
         </div>
-
-        <div
-          className="rounded-2xl p-7 shadow-2xl"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
-        >
+        <div className="rounded-2xl p-6" style={{ background: "var(--bg-sidebar)", border: "1px solid var(--bg-card)" }}>
           <RegisterForm />
         </div>
       </div>

@@ -23,67 +23,49 @@ export default function RegisterForm() {
     }
   };
 
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3.5">
-      <div className="mb-1">
-        <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Create account</h2>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Join Anogram today</p>
-      </div>
-
+    <form onSubmit={submit} className="flex flex-col gap-3">
       {error && (
-        <div
-          className="text-sm px-3 py-2.5 rounded-xl flex items-center gap-2 animate-fade-in"
-          style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}
-        >
-          ⚠ {error}
+        <div className="text-sm px-3 py-2.5 rounded-xl animate-fade-in"
+          style={{ background: "rgba(229,57,53,.12)", border: "1px solid rgba(229,57,53,.25)", color: "#ef5350" }}>
+          {error}
         </div>
       )}
-
-      <Field label="Email — used to sign in">
-        <input className="input" type="email" placeholder="you@example.com" value={form.email} onChange={set("email")} required autoFocus />
-      </Field>
-
-      <Field label="Username — shown to others, used for search">
-        <input className="input" placeholder="coolname" value={form.username} onChange={set("username")} required />
-      </Field>
-
-      <Field label="Password">
-        <input className="input" type="password" placeholder="••••••••" value={form.password} onChange={set("password")} required />
-      </Field>
-
-      <button className="btn-primary mt-1" type="submit" disabled={loading}>
-        {loading ? <Spinner text="Creating account…" /> : "Create account"}
+      <div>
+        <input className="input" type="email" placeholder="Email" value={form.email}
+          onChange={e => setForm({ ...form, email: e.target.value })} required autoFocus />
+        <p className="text-xs mt-1 pl-1" style={{ color: "var(--text-muted)" }}>Used to sign in — not shown to others</p>
+      </div>
+      <div>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold"
+            style={{ color: "var(--accent)" }}>@</span>
+          <input className="input" style={{ paddingLeft: "1.75rem" }}
+            placeholder="username" value={form.username}
+            onChange={e => setForm({ ...form, username: e.target.value })}
+            required autoCapitalize="none" autoComplete="off" />
+        </div>
+        <p className="text-xs mt-1 pl-1" style={{ color: "var(--text-muted)" }}>Your handle — visible to others in search</p>
+      </div>
+      <input className="input" type="password" placeholder="Password" value={form.password}
+        onChange={e => setForm({ ...form, password: e.target.value })} required />
+      <button className="btn-primary mt-1" disabled={loading}>
+        {loading ? <Spinner /> : "Create Account"}
       </button>
-
       <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
         Already have an account?{" "}
-        <Link to="/login" className="font-semibold hover:underline" style={{ color: "var(--accent-hover)" }}>
-          Sign in
-        </Link>
+        <Link to="/login" className="font-semibold" style={{ color: "var(--accent)" }}>Sign in</Link>
       </p>
     </form>
   );
 }
 
-function Field({ label, children }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium pl-1" style={{ color: "var(--text-secondary)" }}>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function Spinner({ text }) {
-  return (
-    <span className="flex items-center justify-center gap-2">
-      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeOpacity="0.25" />
-        <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-      {text}
-    </span>
-  );
-}
+const Spinner = () => (
+  <span className="flex items-center justify-center gap-2">
+    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeOpacity=".3"/>
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+    </svg>
+    Creating…
+  </span>
+);
