@@ -5,7 +5,7 @@ import { Avatar } from "./Sidebar";
 // Only show user if query covers >= 75% of their username length
 function meetsThreshold(query, username) {
   if (!query || !username) return false;
-  return query.length / username.length >= 0.75;
+  return query.length / username.length >= 0.80;
 }
 
 export default function NewChatModal({ onClose, onCreated }) {

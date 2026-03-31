@@ -9,14 +9,13 @@ function formatTime(iso) {
   return d.toLocaleDateString([], { day: "numeric", month: "short" });
 }
 
-export default function ChatList({ chats, activeChatId, onSelect, currentUser }) {
+export default function ChatList({ chats, activeChatId, onSelect, currentUser, onlineIds }) {
   if (!chats.length) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 px-6 text-center">
         <div className="w-16 h-16 rounded-3xl flex items-center justify-center"
           style={{ background: "var(--bg-elevated)" }}>
-          <svg viewBox="0 0 24 24" className="w-8 h-8 opacity-40 fill-current"
-            style={{ color: "var(--accent)" }}>
+          <svg viewBox="0 0 24 24" className="w-8 h-8 opacity-40 fill-current" style={{ color: "var(--accent)" }}>
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
           </svg>
         </div>
@@ -36,6 +35,14 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser })
         const preview = chat.last_message?.content || "";
         const unread = isActive ? 0 : (chat.unread_count || 0);
 
+        // Determine online status of partner
+        let partnerOnline = null;
+        if (chat.chat_type === "dm" && chat.partner_user_id && onlineIds) {
+          partnerOnline = onlineIds.has(chat.partner_user_id);
+        }
+
+        const avatarName = chat.partner_username || chat.name || "?";
+
         return (
           <li key={chat.id} className="animate-slide-in px-2" style={{ animationDelay: `${i * 25}ms` }}>
             <button
@@ -45,7 +52,7 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser })
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg-hover)"; }}
               onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
             >
-              <Avatar name={chat.partner_username || chat.name || "?"} size={12} />
+              <Avatar name={avatarName} size={12} online={partnerOnline} />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-2">
@@ -61,7 +68,7 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser })
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs truncate flex-1 text-left"
+                  <p className="text-xs truncate flex-1"
                     style={{ color: unread > 0 ? "var(--text-secondary)" : "var(--text-muted)" }}>
                     {preview}
                   </p>

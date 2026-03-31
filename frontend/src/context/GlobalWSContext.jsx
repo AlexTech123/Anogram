@@ -7,6 +7,7 @@ export function GlobalWSProvider({ children }) {
   const { user } = useAuth();
   const wsRef = useRef(null);
   const [lastEvent, setLastEvent] = useState(null);
+  const [onlineIds, setOnlineIds] = useState(new Set());
 
   useEffect(() => {
     if (!user) return;
@@ -14,13 +15,33 @@ export function GlobalWSProvider({ children }) {
     if (!token) return;
 
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
+
     const connect = () => {
       const ws = new WebSocket(`${proto}://${window.location.host}/ws/global?token=${token}`);
       wsRef.current = ws;
+
       ws.onmessage = ({ data }) => {
-        try { setLastEvent(JSON.parse(data)); } catch {}
+        try {
+          const msg = JSON.parse(data);
+
+          if (msg.type === "online_list") {
+            setOnlineIds(new Set(msg.user_ids));
+            return;
+          }
+          if (msg.type === "presence") {
+            setOnlineIds(prev => {
+              const next = new Set(prev);
+              if (msg.online) next.add(msg.user_id);
+              else next.delete(msg.user_id);
+              return next;
+            });
+            return;
+          }
+
+          setLastEvent(msg);
+        } catch {}
       };
-      // Reconnect on unexpected close
+
       ws.onclose = (e) => {
         wsRef.current = null;
         if (e.code !== 1000 && e.code !== 4001) {
@@ -28,12 +49,13 @@ export function GlobalWSProvider({ children }) {
         }
       };
     };
+
     connect();
     return () => { wsRef.current?.close(1000); wsRef.current = null; };
   }, [user]);
 
   return (
-    <GlobalWSContext.Provider value={{ lastEvent }}>
+    <GlobalWSContext.Provider value={{ lastEvent, onlineIds }}>
       {children}
     </GlobalWSContext.Provider>
   );

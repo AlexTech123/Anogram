@@ -35,7 +35,7 @@ function DateDivider({ date }) {
   );
 }
 
-export default function ChatWindow({ chat, onBack, onChatDeleted }) {
+export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead }) {
   const { messages: fetched, loading } = useMessages(chat?.id);
   const [messages, setMessages] = useState([]);
   const [replyTo, setReplyTo] = useState(null);
@@ -47,21 +47,20 @@ export default function ChatWindow({ chat, onBack, onChatDeleted }) {
 
   useEffect(() => { setMessages(fetched); setReplyTo(null); }, [fetched]);
 
-  // Auto-scroll when new messages arrive and user is at bottom
   useEffect(() => {
     if (!listRef.current || !atBottom) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
-  // Initial scroll to bottom
   useEffect(() => {
     if (!listRef.current || !messages.length) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [chat?.id]);
 
-  // Intersection Observer — read receipt only when message is visible
+  // IntersectionObserver — fire read receipt only when bubble is visible
   useEffect(() => {
     if (!chat) return;
+    highestSeenId.current = null;
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
@@ -69,27 +68,18 @@ export default function ChatWindow({ chat, onBack, onChatDeleted }) {
         entries.forEach(entry => {
           if (!entry.isIntersecting) return;
           const id = Number(entry.target.dataset.messageId);
-          if (!isNaN(id) && (maxSeen === null || id > maxSeen)) {
-            maxSeen = id;
-          }
+          if (!isNaN(id) && (maxSeen === null || id > maxSeen)) maxSeen = id;
         });
         if (maxSeen !== null && maxSeen !== highestSeenId.current) {
           highestSeenId.current = maxSeen;
           sendRead(maxSeen);
+          onMessagesRead?.(chat.id);
         }
       },
       { root: listRef.current, threshold: 0.5 }
     );
 
-    return () => {
-      observerRef.current?.disconnect();
-      observerRef.current = null;
-    };
-  }, [chat?.id]);
-
-  // Reset highestSeenId on chat change
-  useEffect(() => {
-    highestSeenId.current = null;
+    return () => { observerRef.current?.disconnect(); observerRef.current = null; };
   }, [chat?.id]);
 
   const handleScroll = useCallback(() => {
@@ -100,7 +90,6 @@ export default function ChatWindow({ chat, onBack, onChatDeleted }) {
 
   const handleDeleted = (id) => setMessages(prev => prev.filter(m => m.id !== id));
 
-  // Click on empty area (the scroll container itself) — back on mobile, deselect on desktop
   const handleContainerClick = (e) => {
     if (e.target === listRef.current) onBack();
   };
@@ -108,7 +97,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted }) {
   if (!chat) {
     return (
       <div
-        className="hidden sm:flex flex-1 flex-col items-center justify-center gap-5 cursor-default"
+        className="hidden sm:flex flex-1 flex-col items-center justify-center gap-5"
         style={{ background: "var(--bg-base)" }}
       >
         <div className="relative">
@@ -144,8 +133,9 @@ export default function ChatWindow({ chat, onBack, onChatDeleted }) {
           style={{
             overscrollBehavior: "contain",
             backgroundImage: `
-              radial-gradient(ellipse 80% 60% at 20% 20%, rgba(99,102,241,.04) 0%, transparent 60%),
-              radial-gradient(ellipse 60% 70% at 80% 80%, rgba(139,92,246,.04) 0%, transparent 60%)
+              radial-gradient(ellipse 80% 60% at 15% 15%, rgba(99,102,241,.10) 0%, transparent 55%),
+              radial-gradient(ellipse 70% 70% at 85% 85%, rgba(139,92,246,.09) 0%, transparent 55%),
+              radial-gradient(ellipse 50% 40% at 50% 50%, rgba(124,111,255,.04) 0%, transparent 70%)
             `,
           }}
           onScroll={handleScroll}
@@ -191,7 +181,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted }) {
           <div />
         </div>
 
-        {/* Scroll to bottom button */}
+        {/* Scroll-to-bottom button */}
         {!atBottom && (
           <button
             onClick={() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })}

@@ -30,6 +30,7 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
         )
 
     partner_username = None
+    partner_user_id = None
     if chat.chat_type == "dm":
         other = db.query(ChatMember).filter(
             ChatMember.chat_id == chat.id, ChatMember.user_id != current_user_id
@@ -37,6 +38,7 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
         if other:
             u = db.get(User, other.user_id)
             partner_username = u.username if u else None
+            partner_user_id = other.user_id
 
     last_read_id = membership.last_read_message_id if membership else None
     unread_q = db.query(Message).filter(
@@ -51,27 +53,24 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
     out = ChatOut.model_validate(chat)
     out.last_message = last_msg
     out.partner_username = partner_username
+    out.partner_user_id = partner_user_id
     out.unread_count = unread_count
     return out
 
 
 def get_user_chats(db: Session, user_id: int) -> list[ChatOut]:
-    # Subquery: last message time per chat
     last_msg_time = (
         db.query(Message.chat_id, func.max(Message.created_at).label("last_at"))
         .filter(Message.is_deleted == False)
         .group_by(Message.chat_id)
         .subquery()
     )
-
     chats = (
         db.query(Chat)
         .join(ChatMember, ChatMember.chat_id == Chat.id)
         .outerjoin(last_msg_time, last_msg_time.c.chat_id == Chat.id)
         .filter(ChatMember.user_id == user_id)
-        .order_by(
-            func.coalesce(last_msg_time.c.last_at, Chat.created_at).desc()
-        )
+        .order_by(func.coalesce(last_msg_time.c.last_at, Chat.created_at).desc())
         .all()
     )
     return [_build_chat_out(db, c, user_id) for c in chats]

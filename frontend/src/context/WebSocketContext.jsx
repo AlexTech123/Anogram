@@ -2,15 +2,21 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 
 const WSContext = createContext(null);
 
-export function WebSocketProvider({ chatId, children }) {
+export function WebSocketProvider({ chatId, initialReadId, children }) {
   const wsRef = useRef(null);
   const [lastMessage, setLastMessage]             = useState(null);
   const [typingUsers, setTypingUsers]             = useState({});
   const [onlineUserIds, setOnlineUserIds]         = useState(new Set());
-  const [lastReadMessageId, setLastReadMessageId] = useState(null);
+  // Initialise from server so double-tick persists across sessions
+  const [lastReadMessageId, setLastReadMessageId] = useState(initialReadId ?? null);
 
   const typingTimers   = useRef({});
   const typingThrottle = useRef(null);
+
+  // When initialReadId changes (new chat opened), reset
+  useEffect(() => {
+    setLastReadMessageId(initialReadId ?? null);
+  }, [chatId, initialReadId]);
 
   useEffect(() => {
     if (!chatId) return;
@@ -19,17 +25,13 @@ export function WebSocketProvider({ chatId, children }) {
 
     setTypingUsers({});
     setOnlineUserIds(new Set());
-    setLastReadMessageId(null);
     Object.values(typingTimers.current).forEach(clearTimeout);
     typingTimers.current = {};
 
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${proto}://${window.location.host}/ws/${chatId}?token=${token}`);
     wsRef.current = ws;
-
-    ws.onmessage = ({ data }) => {
-      try { dispatch(JSON.parse(data)); } catch {}
-    };
+    ws.onmessage = ({ data }) => { try { dispatch(JSON.parse(data)); } catch {} };
     ws.onerror = e => console.error("WS error", e);
 
     return () => {
@@ -64,6 +66,7 @@ export function WebSocketProvider({ chatId, children }) {
         setOnlineUserIds(prev => { const n = new Set(prev); n.delete(data.user_id); return n; });
         break;
       case "read_receipt":
+        // Always advance — never go backwards
         setLastReadMessageId(prev =>
           prev === null || data.message_id > prev ? data.message_id : prev
         );

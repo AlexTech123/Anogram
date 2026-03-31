@@ -12,7 +12,6 @@ from app.services.chat_service import (
     get_chat_or_403, get_user_chats, remove_member,
 )
 from app.core.global_ws_manager import global_manager
-import asyncio
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -30,7 +29,24 @@ def create(data: ChatCreate, current_user: User = Depends(get_current_user), db:
 
 @router.get("/{chat_id}", response_model=ChatDetailOut)
 def get_chat(chat_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return get_chat_or_403(db, chat_id, current_user.id)
+    chat = get_chat_or_403(db, chat_id, current_user.id)
+    out = _build_chat_out(db, chat, current_user.id)
+
+    # Build ChatDetailOut with members
+    detail = ChatDetailOut.model_validate(chat)
+    detail.last_message = out.last_message
+    detail.partner_username = out.partner_username
+    detail.partner_user_id = out.partner_user_id
+    detail.unread_count = out.unread_count
+
+    # Find partner's last_read_message_id (what they have read of our messages)
+    partner_member = db.query(ChatMember).filter(
+        ChatMember.chat_id == chat_id,
+        ChatMember.user_id != current_user.id,
+    ).first()
+    detail.partner_last_read_id = partner_member.last_read_message_id if partner_member else None
+
+    return detail
 
 
 @router.delete("/{chat_id}", status_code=204)
@@ -44,13 +60,10 @@ async def delete_chat(chat_id: int, current_user: User = Depends(get_current_use
     if not member:
         raise HTTPException(status_code=403, detail="Not a member")
 
-    # Collect all member ids before deleting
     member_ids = [m.user_id for m in db.query(ChatMember).filter(ChatMember.chat_id == chat_id).all()]
-
     db.delete(chat)
     db.commit()
 
-    # Notify all members via global WS
     for uid in member_ids:
         await global_manager.notify(uid, {"type": "chat_deleted", "chat_id": chat_id})
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -29,6 +29,13 @@ def delete_me(current_user: User = Depends(get_current_user), db: Session = Depe
     db.commit()
 
 
+@router.get("/online", response_model=list[int])
+def get_online_ids(current_user: User = Depends(get_current_user)):
+    """Return user IDs currently connected to /ws/global."""
+    from app.core.global_ws_manager import global_manager
+    return list(global_manager._conns.keys())
+
+
 @router.get("/search", response_model=list[UserPublic])
 def search_users(q: str = Query(..., min_length=1), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return (
@@ -41,7 +48,6 @@ def search_users(q: str = Query(..., min_length=1), current_user: User = Depends
 
 @router.get("/{user_id}", response_model=UserPublic)
 def get_user(user_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    from fastapi import HTTPException
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

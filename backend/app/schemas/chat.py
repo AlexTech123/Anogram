@@ -31,9 +31,12 @@ class ChatOut(BaseModel):
     created_at: datetime
     last_message: LastMessageOut | None = None
     partner_username: str | None = None
+    partner_user_id: int | None = None
     unread_count: int = 0
     model_config = {"from_attributes": True}
 
 
 class ChatDetailOut(ChatOut):
     members: list[ChatMemberOut]
+    # last message ID that the partner has read — used to init double-tick state
+    partner_last_read_id: int | None = None

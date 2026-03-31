@@ -4,7 +4,7 @@ import { deleteAccount } from "../../api/users";
 import ChatList from "./ChatList";
 import NewChatModal from "./NewChatModal";
 
-export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreated }) {
+export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreated, onDeselectChat, onlineIds, currentUser }) {
   const { user, logout } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -24,7 +24,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
       <div className="flex-shrink-0 flex items-center gap-2 px-3"
         style={{ height: 58, borderBottom: "1px solid var(--border)", background: "var(--bg-sidebar)" }}>
 
-        {/* Avatar + dropdown */}
         <div className="relative">
           <button onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); }}
             className="transition-all active:scale-90 flex-shrink-0">
@@ -35,8 +34,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
             <div className="absolute left-0 top-full mt-2 rounded-2xl shadow-2xl z-50 animate-pop"
               style={{ background: "var(--bg-card)", border: "1px solid var(--border)", minWidth: 190, overflow: "hidden" }}
               onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}>
-
-              {/* User info header */}
               <div className="px-4 py-3 flex items-center gap-2.5"
                 style={{ background: "linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.08))", borderBottom: "1px solid var(--border)" }}>
                 <Avatar name={user?.username || "?"} size={8} />
@@ -45,7 +42,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>Anonymous</p>
                 </div>
               </div>
-
               <div className="p-1.5">
                 <button onClick={logout}
                   className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 rounded-xl transition-all"
@@ -57,13 +53,9 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                   </svg>
                   Log out
                 </button>
-
                 <button onClick={handleDeleteAccount} disabled={deleting}
                   className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 rounded-xl transition-all mt-0.5"
-                  style={{
-                    color: confirmDelete ? "#fff" : "#f87171",
-                    background: confirmDelete ? "rgba(239,68,68,.6)" : "transparent",
-                  }}
+                  style={{ color: confirmDelete ? "#fff" : "#f87171", background: confirmDelete ? "rgba(239,68,68,.6)" : "transparent" }}
                   onMouseEnter={e => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,.1)"; }}
                   onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = confirmDelete ? "rgba(239,68,68,.6)" : "transparent"; }}>
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
@@ -78,7 +70,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
 
         <span className="flex-1 font-bold text-base" style={{ color: "var(--text-primary)" }}>Anogram</span>
 
-        {/* New chat */}
         <button onClick={() => setShowModal(true)} title="New message"
           className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
           style={{ color: "var(--text-secondary)" }}
@@ -90,9 +81,23 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
         </button>
       </div>
 
+      {/* Chat list — scrollable */}
       <div className="flex-1 overflow-y-auto">
-        <ChatList chats={chats} activeChatId={activeChatId} onSelect={onSelectChat} currentUser={user} />
+        <ChatList
+          chats={chats}
+          activeChatId={activeChatId}
+          onSelect={onSelectChat}
+          currentUser={user}
+          onlineIds={onlineIds}
+        />
       </div>
+
+      {/* Clickable empty area below list — deselects active chat */}
+      <div
+        className="flex-shrink-0 cursor-default"
+        style={{ minHeight: 48 }}
+        onClick={onDeselectChat}
+      />
 
       {showModal && (
         <NewChatModal
@@ -104,7 +109,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
   );
 }
 
-export function Avatar({ name = "?", size = 10, online = false }) {
+export function Avatar({ name = "?", size = 10, online = null }) {
   const palettes = [
     ["#818cf8","#6366f1"],["#f472b6","#ec4899"],["#fb923c","#f97316"],
     ["#34d399","#10b981"],["#60a5fa","#3b82f6"],["#a78bfa","#8b5cf6"],
@@ -118,9 +123,15 @@ export function Avatar({ name = "?", size = 10, online = false }) {
         style={{ width: px, height: px, fontSize: Math.round(px * .4), background: `linear-gradient(135deg,${a},${b})` }}>
         {name.replace(/^@/, "").charAt(0).toUpperCase()}
       </div>
-      {online && (
-        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
-          style={{ background: "var(--online)", borderColor: "var(--bg-sidebar)", boxShadow: "0 0 6px var(--online)" }} />
+      {online !== null && (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 transition-colors duration-500"
+          style={{
+            background: online ? "var(--online)" : "#4b5563",
+            borderColor: "var(--bg-sidebar)",
+            boxShadow: online ? "0 0 6px var(--online)" : "none",
+          }}
+        />
       )}
     </div>
   );

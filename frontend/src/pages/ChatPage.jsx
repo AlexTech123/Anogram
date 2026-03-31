@@ -9,10 +9,11 @@ import { useGlobalWS } from "../context/GlobalWSContext";
 
 export default function ChatPage() {
   const { user } = useAuth();
-  const { lastEvent } = useGlobalWS();
+  const { lastEvent, onlineIds } = useGlobalWS();
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [activeChat, setActiveChat] = useState(null);
+  const [partnerLastReadId, setPartnerLastReadId] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const activeChatIdRef = useRef(null);
 
@@ -30,18 +31,15 @@ export default function ChatPage() {
     if (lastEvent.type === "new_message") {
       const { chat_id, content, sender_username, created_at } = lastEvent;
       const isActive = activeChatIdRef.current === chat_id;
-
       setChats(prev => {
         const idx = prev.findIndex(c => c.id === chat_id);
         if (idx === -1) { loadChats(); return prev; }
-
         const updated = [...prev];
         updated[idx] = {
           ...updated[idx],
           last_message: { content, sender_username, created_at },
           unread_count: isActive ? 0 : (updated[idx].unread_count || 0) + 1,
         };
-        // Bubble to top
         const [moved] = updated.splice(idx, 1);
         return [moved, ...updated];
       });
@@ -51,9 +49,7 @@ export default function ChatPage() {
       const { chat_id } = lastEvent;
       setChats(prev => prev.filter(c => c.id !== chat_id));
       if (activeChatIdRef.current === chat_id) {
-        setActiveChatId(null);
-        setActiveChat(null);
-        setShowChat(false);
+        setActiveChatId(null); setActiveChat(null); setShowChat(false);
       }
     }
   }, [lastEvent]);
@@ -67,31 +63,25 @@ export default function ChatPage() {
       const other = data.members?.find(m => m.user_id !== user?.id);
       data.name = other?.user?.username || "Direct Message";
     }
+    setPartnerLastReadId(data.partner_last_read_id ?? null);
     setActiveChat(data);
   };
 
+  const handleMessagesRead = useCallback((chatId) => {
+    setChats(prev => prev.map(c => c.id === chatId ? { ...c, unread_count: 0 } : c));
+  }, []);
+
   const handleChatDeleted = (id) => {
     setChats(prev => prev.filter(c => c.id !== id));
-    setActiveChatId(null);
-    setActiveChat(null);
-    setShowChat(false);
+    setActiveChatId(null); setActiveChat(null); setShowChat(false);
   };
 
   const goBack = () => {
-    setShowChat(false);
-    setActiveChatId(null);
-    setActiveChat(null);
-  };
-
-  const handleChatCreated = (chat) => {
-    setChats(prev => {
-      if (prev.find(c => c.id === chat.id)) return prev;
-      return [chat, ...prev];
-    });
+    setShowChat(false); setActiveChatId(null); setActiveChat(null);
   };
 
   return (
-    <WebSocketProvider chatId={activeChatId}>
+    <WebSocketProvider chatId={activeChatId} initialReadId={partnerLastReadId}>
       <AppLayout
         showChat={showChat}
         sidebar={
@@ -99,7 +89,10 @@ export default function ChatPage() {
             chats={chats}
             activeChatId={activeChatId}
             onSelectChat={selectChat}
-            onChatCreated={handleChatCreated}
+            onChatCreated={chat => setChats(prev => prev.find(c => c.id === chat.id) ? prev : [chat, ...prev])}
+            onDeselectChat={goBack}
+            onlineIds={onlineIds}
+            currentUser={user}
           />
         }
         main={
@@ -107,6 +100,7 @@ export default function ChatPage() {
             chat={activeChat}
             onBack={goBack}
             onChatDeleted={handleChatDeleted}
+            onMessagesRead={handleMessagesRead}
           />
         }
       />
