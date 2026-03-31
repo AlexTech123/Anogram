@@ -1,4 +1,4 @@
-"""make email nullable, remove unique constraint
+"""make email nullable
 
 Revision ID: 0003
 Revises: 0002
@@ -14,16 +14,18 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.alter_column("users", "email", nullable=True)
-    # Drop unique index on email if it exists (ignore if not)
-    try:
-        op.drop_index("ix_users_email", table_name="users")
-    except Exception:
-        pass
-    try:
-        op.drop_constraint("users_email_key", "users", type_="unique")
-    except Exception:
-        pass
+    conn = op.get_bind()
+    # Drop unique constraint with IF EXISTS — never fails, never aborts the transaction
+    conn.execute(sa.text(
+        "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key"
+    ))
+    conn.execute(sa.text(
+        "DROP INDEX IF EXISTS ix_users_email"
+    ))
+    # Make nullable
+    conn.execute(sa.text(
+        "ALTER TABLE users ALTER COLUMN email DROP NOT NULL"
+    ))
 
 
 def downgrade() -> None:
