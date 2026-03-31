@@ -61,7 +61,14 @@ export default function ChatPage() {
     const { data } = await getChat(id);
     if (data.chat_type === "dm") {
       const other = data.members?.find(m => m.user_id !== user?.id);
-      data.name = other?.user?.username || "Direct Message";
+      const otherUsername = other?.user?.username || "Direct Message";
+      // Apply local custom nickname if set
+      try {
+        const nk = JSON.parse(localStorage.getItem("anogram_nicknames") || "{}");
+        data.name = nk[String(other?.user_id)] || otherUsername;
+      } catch {
+        data.name = otherUsername;
+      }
     }
     setPartnerLastReadId(data.partner_last_read_id ?? null);
     setActiveChat(data);

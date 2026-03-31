@@ -45,27 +45,27 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
   const listRef = useRef(null);
   const observerRef = useRef(null);
   const highestSeenId = useRef(null);
+  // Keep atBottom in a ref so useEffect for incoming messages always sees current value
+  const atBottomRef = useRef(true);
 
   useEffect(() => { setMessages(fetched); setReplyTo(null); }, [fetched]);
 
-  // Auto-scroll when at bottom
   useEffect(() => {
     if (!listRef.current || !atBottom) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
-  // Initial scroll
   useEffect(() => {
     if (!listRef.current || !messages.length) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [chat?.id]);
 
-  // Track new incoming messages not yet visible
+  // Track incoming messages not yet visible — use ref to avoid stale closure
   useEffect(() => {
     if (!lastMessage || lastMessage.type !== "message") return;
     if (lastMessage.chat_id !== chat?.id) return;
-    // If message is from someone else and not at bottom → increment unseen
-    if (lastMessage.sender_id !== user?.id && !atBottom) {
+    if (lastMessage.sender_id === user?.id) return;
+    if (!atBottomRef.current) {
       setNewUnseenCount(prev => prev + 1);
       onUnreadIncrement?.(chat.id);
     }
@@ -75,7 +75,6 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
   useEffect(() => {
     if (!chat) return;
     highestSeenId.current = null;
-
     observerRef.current = new IntersectionObserver(
       (entries) => {
         let maxSeen = highestSeenId.current;
@@ -92,7 +91,6 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
       },
       { root: listRef.current, threshold: 0.5 }
     );
-
     return () => { observerRef.current?.disconnect(); observerRef.current = null; };
   }, [chat?.id]);
 
@@ -103,6 +101,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
     const bottom = scrollHeight - scrollTop - clientHeight < 80;
     setAtBottom(bottom);
+    atBottomRef.current = bottom;
     if (bottom) { markSeen(); onMessagesRead?.(chat?.id); }
   }, [chat?.id]);
 
@@ -194,30 +193,31 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
           <div />
         </div>
 
-        {/* Scroll-to-bottom + unseen count badge */}
+        {/* Scroll-to-bottom button with unseen count + arrow */}
         {!atBottom && (
           <button
             onClick={() => {
               listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
               markSeen();
             }}
-            className="absolute bottom-4 right-4 flex items-center justify-center shadow-lg transition-all animate-fade-in active:scale-90"
+            className="absolute bottom-4 right-4 flex flex-col items-center justify-center gap-0.5 shadow-lg transition-all animate-fade-in active:scale-90"
             style={{
               background: "var(--accent-gradient)",
               boxShadow: "0 4px 16px rgba(99,102,241,.5)",
-              borderRadius: "50%",
-              width: 36, height: 36,
+              borderRadius: 20,
+              minWidth: 36, height: 36,
+              padding: "0 8px",
             }}
           >
-            {newUnseenCount > 0 ? (
-              <span className="text-white font-bold" style={{ fontSize: 11 }}>
+            {newUnseenCount > 0 && (
+              <span className="text-white font-bold leading-none" style={{ fontSize: 10 }}>
                 {newUnseenCount > 99 ? "99+" : newUnseenCount}
               </span>
-            ) : (
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white">
-                <path d="M7 10l5 5 5-5z"/>
-              </svg>
             )}
+            {/* Arrow always shown */}
+            <svg viewBox="0 0 24 24" className="fill-white flex-shrink-0" style={{ width: 16, height: 16 }}>
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
           </button>
         )}
       </div>

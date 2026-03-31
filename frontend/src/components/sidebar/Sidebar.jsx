@@ -1,8 +1,27 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { deleteAccount } from "../../api/users";
 import ChatList from "./ChatList";
 import NewChatModal from "./NewChatModal";
+
+// LocalStorage key for custom nicknames
+const NICKNAMES_KEY = "anogram_nicknames";
+
+export function useNicknames() {
+  const [nicknames, setNicknames] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(NICKNAMES_KEY) || "{}"); }
+    catch { return {}; }
+  });
+  const set = (userId, name) => {
+    setNicknames(prev => {
+      const next = { ...prev, [userId]: name };
+      localStorage.setItem(NICKNAMES_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+  const get = (userId) => nicknames[String(userId)] || null;
+  return { get, set, nicknames };
+}
 
 export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreated, onDeselectChat, onlineIds, currentUser }) {
   const { user, logout } = useAuth();
@@ -27,7 +46,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
         className="flex-shrink-0 flex items-center gap-2.5 px-4"
         style={{ height: 58, borderBottom: "1px solid var(--border)", background: "var(--bg-sidebar)" }}
       >
-        {/* Logo — no letter, just wordmark */}
         <span
           className="flex-1 font-black tracking-tight select-none"
           style={{
@@ -41,8 +59,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
         >
           Anogram
         </span>
-
-        {/* New chat */}
         <button
           onClick={() => setShowModal(true)}
           title="New message"
@@ -57,7 +73,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
         </button>
       </div>
 
-      {/* ── Chat list — takes remaining space and scrolls ─────────── */}
+      {/* ── Chat list ────────────────────────────────────────────── */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         <ChatList
           chats={chats}
@@ -68,28 +84,26 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
         />
       </div>
 
-      {/* ── Bottom nav area — always visible, never scrolls ──────── */}
-      <div
-        className="flex-shrink-0"
-        style={{ borderTop: "1px solid var(--border)", background: "var(--bg-sidebar)" }}
-      >
-        {/* Tap anywhere in this area to deselect chat */}
+      {/* ── Bottom panel — always pinned ─────────────────────────── */}
+      <div className="flex-shrink-0" style={{ borderTop: "1px solid var(--border)", background: "var(--bg-sidebar)" }}>
+
+        {/* Back to chats — only when a chat is active */}
         {activeChatId && (
           <button
             onClick={onDeselectChat}
-            className="w-full flex items-center gap-2 px-4 py-2.5 transition-all text-left"
-            style={{ color: "var(--text-muted)", fontSize: 11 }}
+            className="w-full flex items-center gap-2.5 px-4 py-2 transition-all text-left"
+            style={{ color: "var(--text-muted)", fontSize: 12 }}
             onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
           >
             <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current flex-shrink-0">
               <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
             </svg>
-            Back to chats
+            All chats
           </button>
         )}
 
-        {/* User row */}
+        {/* User row — click opens menu */}
         <div className="relative">
           <button
             onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); }}
@@ -97,7 +111,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
             onMouseEnter={e => e.currentTarget.style.background = "var(--bg-elevated)"}
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
           >
-            {/* Avatar with online dot */}
             <Avatar name={user?.username || "?"} size={8} online={iAmOnline} />
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
@@ -107,8 +120,10 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                 {iAmOnline ? "online" : "offline"}
               </p>
             </div>
-            <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0 fill-current" style={{ color: "var(--text-muted)" }}>
-              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+            {/* Chevron instead of three dots */}
+            <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0 fill-current transition-transform duration-200"
+              style={{ color: "var(--text-muted)", transform: showMenu ? "rotate(180deg)" : "rotate(0deg)" }}>
+              <path d="M7 10l5 5 5-5z"/>
             </svg>
           </button>
 
@@ -142,7 +157,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                   style={{ color: confirmDelete ? "#fff" : "#f87171", background: confirmDelete ? "rgba(239,68,68,.6)" : "transparent" }}
                   onMouseEnter={e => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,.1)"; }}
                   onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = confirmDelete ? "rgba(239,68,68,.6)" : "transparent"; }}>
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
+                  <svg viewObj="0 0 24 24" viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                   </svg>
                   {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete account"}
@@ -173,21 +188,13 @@ export function Avatar({ name = "?", size = 10, online = null }) {
   const px = size * 4;
   return (
     <div className="relative flex-shrink-0">
-      <div
-        className="rounded-2xl flex items-center justify-center font-bold text-white select-none"
-        style={{ width: px, height: px, fontSize: Math.round(px * .4), background: `linear-gradient(135deg,${a},${b})` }}
-      >
+      <div className="rounded-2xl flex items-center justify-center font-bold text-white select-none"
+        style={{ width: px, height: px, fontSize: Math.round(px * .4), background: `linear-gradient(135deg,${a},${b})` }}>
         {name.replace(/^@/, "").charAt(0).toUpperCase()}
       </div>
       {online !== null && (
-        <span
-          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 transition-all duration-500"
-          style={{
-            background: online ? "var(--online)" : "#4b5563",
-            borderColor: "var(--bg-sidebar)",
-            boxShadow: online ? "0 0 6px var(--online)" : "none",
-          }}
-        />
+        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 transition-all duration-500"
+          style={{ background: online ? "var(--online)" : "#4b5563", borderColor: "var(--bg-sidebar)", boxShadow: online ? "0 0 6px var(--online)" : "none" }} />
       )}
     </div>
   );
