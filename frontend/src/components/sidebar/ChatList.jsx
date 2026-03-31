@@ -31,7 +31,7 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser })
         const name = chat.chat_type === "dm"
           ? (chat.partner_username ? `@${chat.partner_username}` : "Direct Message")
           : (chat.name || "Group");
-        const preview = chat.last_message?.content || "No messages yet";
+        const preview = chat.last_message?.content || "";
         const unread = isActive ? 0 : (chat.unread_count || 0);
 
         return (
@@ -46,7 +46,7 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser })
               <Avatar name={chat.partner_username || chat.name || "?"} size={12} />
 
               <div className="flex-1 min-w-0">
-                {/* Name row */}
+                {/* Name + time */}
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="font-semibold text-sm truncate"
                     style={{ color: unread > 0 ? "var(--text-primary)" : "var(--text-secondary)" }}>
@@ -54,35 +54,27 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser })
                   </p>
                   {chat.last_message && (
                     <span className="flex-shrink-0 text-xs"
-                      style={{ color: unread > 0
-                        ? "var(--accent)"
-                        : isActive ? "rgba(255,255,255,.55)" : "var(--text-muted)" }}>
+                      style={{ color: unread > 0 ? "var(--accent)" : isActive ? "rgba(255,255,255,.55)" : "var(--text-muted)" }}>
                       {formatTime(chat.last_message.created_at)}
                     </span>
                   )}
                 </div>
 
-                {/* Preview row */}
-                <div className="flex items-center justify-between gap-2 mt-0.5">
-                  <p className="text-xs truncate flex-1"
-                    style={{ color: unread > 0
-                      ? "var(--text-secondary)"
-                      : isActive ? "rgba(255,255,255,.55)" : "var(--text-muted)" }}>
+                {/* Preview + badge */}
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs truncate flex-1 text-left"
+                    style={{ color: unread > 0 ? "var(--text-secondary)" : isActive ? "rgba(255,255,255,.5)" : "var(--text-muted)" }}>
                     {preview}
                   </p>
-
-                  {/* Unread badge */}
                   {unread > 0 && (
-                    <span
-                      className="flex-shrink-0 flex items-center justify-center font-semibold text-white rounded-full"
+                    <span className="flex-shrink-0 flex items-center justify-center font-bold text-white rounded-full"
                       style={{
                         background: "var(--accent)",
                         fontSize: 10,
                         minWidth: unread > 99 ? 22 : 18,
                         height: 18,
                         padding: "0 4px",
-                      }}
-                    >
+                      }}>
                       {unread > 99 ? "99+" : unread}
                     </span>
                   )}

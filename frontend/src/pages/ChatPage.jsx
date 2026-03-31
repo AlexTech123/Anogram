@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getChat, getChats } from "../api/chats";
 import AppLayout from "../components/layout/AppLayout";
 import Sidebar from "../components/sidebar/Sidebar";
@@ -18,27 +18,37 @@ export default function ChatPage() {
 
   useEffect(() => { activeChatIdRef.current = activeChatId; }, [activeChatId]);
 
-  useEffect(() => {
+  const loadChats = useCallback(() => {
     getChats().then(r => setChats(r.data));
   }, []);
 
-  // Global WS: update sidebar on new message
+  useEffect(() => { loadChats(); }, []);
+
+  // Handle global WS events
   useEffect(() => {
     if (!lastEvent || lastEvent.type !== "new_message") return;
     const { chat_id, content, sender_username, created_at } = lastEvent;
     const isActive = activeChatIdRef.current === chat_id;
 
     setChats(prev => {
+      const exists = prev.find(c => c.id === chat_id);
+
+      // Chat not in list yet (first message from someone new) — reload
+      if (!exists) {
+        loadChats();
+        return prev;
+      }
+
       const updated = prev.map(c => {
         if (c.id !== chat_id) return c;
         return {
           ...c,
           last_message: { content, sender_username, created_at },
-          // Only increment unread if this chat isn't currently open
           unread_count: isActive ? 0 : (c.unread_count || 0) + 1,
         };
       });
-      // Bubble to top
+
+      // Bubble updated chat to top
       const idx = updated.findIndex(c => c.id === chat_id);
       if (idx > 0) {
         const [moved] = updated.splice(idx, 1);
@@ -51,10 +61,7 @@ export default function ChatPage() {
   const selectChat = async (id) => {
     setActiveChatId(id);
     setShowChat(true);
-
-    // Clear unread immediately on open
     setChats(prev => prev.map(c => c.id === id ? { ...c, unread_count: 0 } : c));
-
     const { data } = await getChat(id);
     if (data.chat_type === "dm") {
       const other = data.members?.find(m => m.user_id !== user?.id);

@@ -22,11 +22,13 @@ app.include_router(chats.router, prefix="/api")
 app.include_router(messages.router, prefix="/api")
 
 
-@app.websocket("/ws/{chat_id}")
-async def ws_chat(websocket: WebSocket, chat_id: int, token: str):
-    await chat_websocket(websocket, chat_id, token)
-
-
+# IMPORTANT: /ws/global MUST be registered before /ws/{chat_id}
+# otherwise FastAPI matches "global" as chat_id (int) and fails
 @app.websocket("/ws/global")
 async def ws_global(websocket: WebSocket, token: str):
     await global_websocket(websocket, token)
+
+
+@app.websocket("/ws/{chat_id}")
+async def ws_chat(websocket: WebSocket, chat_id: int, token: str):
+    await chat_websocket(websocket, chat_id, token)

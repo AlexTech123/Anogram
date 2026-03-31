@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import AnogramLogo from "../AnogramLogo";
 import ChatList from "./ChatList";
 import NewChatModal from "./NewChatModal";
 
-export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreated, currentUser }) {
+export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreated }) {
   const { user, logout } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -31,7 +30,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                 <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                   @{user?.username}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Anonymous user</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Anonymous</p>
               </div>
               <button onClick={logout}
                 className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors"
@@ -48,13 +47,10 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
           )}
         </div>
 
-        {/* Logo + name */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <AnogramLogo size={30} />
-          <span className="font-bold text-base truncate" style={{ color: "var(--text-primary)" }}>
-            Anogram
-          </span>
-        </div>
+        {/* Title */}
+        <span className="flex-1 font-bold text-base" style={{ color: "var(--text-primary)" }}>
+          Anogram
+        </span>
 
         {/* New chat */}
         <button
@@ -73,12 +69,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
 
       {/* Chat list */}
       <div className="flex-1 overflow-y-auto">
-        <ChatList
-          chats={chats}
-          activeChatId={activeChatId}
-          onSelect={onSelectChat}
-          currentUser={user}
-        />
+        <ChatList chats={chats} activeChatId={activeChatId} onSelect={onSelectChat} currentUser={user} />
       </div>
 
       {showModal && (
@@ -91,7 +82,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
   );
 }
 
-/* ── Shared Avatar ──────────────────────────────────────────────────────── */
 export function Avatar({ name = "?", size = 10, online = false }) {
   const palettes = [
     ["#e8677a","#c2185b"],["#ff9955","#e65100"],["#ffd740","#f9a825"],
