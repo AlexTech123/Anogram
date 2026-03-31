@@ -6,18 +6,14 @@ import ChatWindow from "../components/chat/ChatWindow";
 import { WebSocketProvider } from "../context/WebSocketContext";
 import { useAuth } from "../context/AuthContext";
 import { useGlobalWS } from "../context/GlobalWSContext";
-import { usePushNotifications } from "../hooks/usePushNotifications";
-import PushPrompt from "../components/PushPrompt";
 
 export default function ChatPage() {
   const { user } = useAuth();
   const { lastEvent } = useGlobalWS();
-  const push = usePushNotifications();
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [activeChat, setActiveChat] = useState(null);
   const [showChat, setShowChat] = useState(false);
-  const [showPushPrompt, setShowPushPrompt] = useState(false);
   const activeChatIdRef = useRef(null);
 
   useEffect(() => { activeChatIdRef.current = activeChatId; }, [activeChatId]);
@@ -28,15 +24,6 @@ export default function ChatPage() {
 
   useEffect(() => { loadChats(); }, []);
 
-  // Show push prompt once if supported and not yet decided
-  useEffect(() => {
-    if (push.supported && push.permission === "default" && !push.subscribed) {
-      const timer = setTimeout(() => setShowPushPrompt(true), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [push.supported, push.permission, push.subscribed]);
-
-  // Handle global WS events
   useEffect(() => {
     if (!lastEvent) return;
 
@@ -102,8 +89,7 @@ export default function ChatPage() {
             chats={chats}
             activeChatId={activeChatId}
             onSelectChat={selectChat}
-            onChatCreated={(chat) => setChats(prev => prev.find(c => c.id === chat.id) ? prev : [chat, ...prev])}
-            push={push}
+            onChatCreated={chat => setChats(prev => prev.find(c => c.id === chat.id) ? prev : [chat, ...prev])}
           />
         }
         main={
@@ -114,12 +100,6 @@ export default function ChatPage() {
           />
         }
       />
-      {showPushPrompt && (
-        <PushPrompt
-          onAllow={async () => { await push.requestAndSubscribe(); setShowPushPrompt(false); }}
-          onDismiss={() => setShowPushPrompt(false)}
-        />
-      )}
     </WebSocketProvider>
   );
 }

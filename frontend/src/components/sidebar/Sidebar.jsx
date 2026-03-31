@@ -4,7 +4,7 @@ import { deleteAccount } from "../../api/users";
 import ChatList from "./ChatList";
 import NewChatModal from "./NewChatModal";
 
-export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreated, push }) {
+export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreated }) {
   const { user, logout } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -32,40 +32,41 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
           </button>
 
           {showMenu && (
-            <div className="absolute left-0 top-full mt-2 rounded-2xl shadow-2xl z-50 py-1.5 animate-pop"
-              style={{ background: "var(--bg-card)", border: "1px solid var(--bg-elevated)", minWidth: 190 }}
+            <div className="absolute left-0 top-full mt-2 rounded-2xl shadow-2xl z-50 animate-pop"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", minWidth: 190, overflow: "hidden" }}
               onMouseLeave={() => { setShowMenu(false); setConfirmDelete(false); }}>
-              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--bg-elevated)" }}>
-                <div className="flex items-center gap-2.5">
-                  <Avatar name={user?.username || "?"} size={8} />
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>@{user?.username}</p>
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>Anonymous</p>
-                  </div>
+
+              {/* User info header */}
+              <div className="px-4 py-3 flex items-center gap-2.5"
+                style={{ background: "linear-gradient(135deg, rgba(99,102,241,.12), rgba(139,92,246,.08))", borderBottom: "1px solid var(--border)" }}>
+                <Avatar name={user?.username || "?"} size={8} />
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>@{user?.username}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Anonymous</p>
                 </div>
               </div>
 
               <div className="p-1.5">
                 <button onClick={logout}
-                  className="w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 rounded-xl transition-all"
+                  className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 rounded-xl transition-all"
                   style={{ color: "var(--text-secondary)" }}
                   onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                     <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                   </svg>
                   Log out
                 </button>
 
                 <button onClick={handleDeleteAccount} disabled={deleting}
-                  className="w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 rounded-xl transition-all mt-0.5"
+                  className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 rounded-xl transition-all mt-0.5"
                   style={{
                     color: confirmDelete ? "#fff" : "#f87171",
-                    background: confirmDelete ? "rgba(239,68,68,.65)" : "transparent",
+                    background: confirmDelete ? "rgba(239,68,68,.6)" : "transparent",
                   }}
                   onMouseEnter={e => { if (!confirmDelete) e.currentTarget.style.background = "rgba(239,68,68,.1)"; }}
-                  onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = confirmDelete ? "rgba(239,68,68,.65)" : "transparent"; }}>
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                  onMouseLeave={e => { if (!confirmDelete) e.currentTarget.style.background = confirmDelete ? "rgba(239,68,68,.6)" : "transparent"; }}>
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                   </svg>
                   {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete account"}
@@ -76,24 +77,6 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
         </div>
 
         <span className="flex-1 font-bold text-base" style={{ color: "var(--text-primary)" }}>Anogram</span>
-
-        {/* Push toggle */}
-        {push?.supported && push.permission !== "denied" && (
-          <button
-            onClick={push.subscribed ? push.unsubscribe : push.requestAndSubscribe}
-            title={push.subscribed ? "Disable notifications" : "Enable notifications"}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 flex-shrink-0"
-            style={{ color: push.subscribed ? "var(--accent-light)" : "var(--text-muted)" }}
-            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-elevated)"}
-            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-            <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 fill-current" style={{ width: 18, height: 18 }}>
-              {push.subscribed
-                ? <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-                : <path d="M20 18.69L7.84 6.14 5.27 3.49 4 4.76l2.8 2.8v.01c-.52.99-.8 2.16-.8 3.42v5l-2 2v1h13.73l2 2L21 19.72l-1-1.03zM12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-7.32V11c0-3.08-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68c-.15.03-.29.08-.43.12l5.93 5.93V14.68z"/>
-              }
-            </svg>
-          </button>
-        )}
 
         {/* New chat */}
         <button onClick={() => setShowModal(true)} title="New message"

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useWebSocket } from "../../context/WebSocketContext";
 import { deleteMessage } from "../../api/messages";
@@ -7,33 +7,43 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function MessageBubble({ message, onDeleted }) {
+export default function MessageBubble({ message, onDeleted, showSender }) {
   const { user } = useAuth();
   const { lastReadMessageId } = useWebSocket();
-  const [hovered, setHovered] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const longTimer = useRef(null);
+  const hideTimer = useRef(null);
 
   const isMine = message.sender_id === user?.id;
   const isRead = isMine && lastReadMessageId !== null && message.id <= lastReadMessageId;
+
+  useEffect(() => {
+    if (showActions) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = setTimeout(() => setShowActions(false), 3000);
+    }
+    return () => clearTimeout(hideTimer.current);
+  }, [showActions]);
+
+  const handleBubbleTap = () => {
+    if (!isMine) return;
+    clearTimeout(hideTimer.current);
+    setShowActions(v => !v);
+  };
 
   const handleDelete = async (e) => {
     e.stopPropagation();
     if (deleting) return;
     setDeleting(true);
+    clearTimeout(hideTimer.current);
     try {
       await deleteMessage(message.id);
       onDeleted(message.id);
     } catch {
       setDeleting(false);
+      setShowActions(false);
     }
   };
-
-  const onTouchStart = () => {
-    if (!isMine) return;
-    longTimer.current = setTimeout(() => setHovered(true), 400);
-  };
-  const onTouchEnd = () => clearTimeout(longTimer.current);
 
   if (message.message_type === "system") {
     return (
@@ -47,35 +57,28 @@ export default function MessageBubble({ message, onDeleted }) {
   }
 
   return (
-    <div
-      className={`flex mb-1 animate-msg-in ${isMine ? "justify-end" : "justify-start"}`}
-      onMouseEnter={() => isMine && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-      onTouchMove={onTouchEnd}
-    >
+    <div className={`flex ${showSender ? "mt-3" : "mt-0.5"} animate-msg-in ${isMine ? "justify-end" : "justify-start"}`}>
       <div className={`max-w-[75%] sm:max-w-[62%] flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-        {!isMine && (
+        {/* Sender name — only for first in a group, only for others */}
+        {!isMine && showSender && (
           <span className="text-xs font-semibold mb-1 px-3" style={{ color: "var(--accent-light)" }}>
             @{message.sender_username}
           </span>
         )}
 
         <div className="flex items-end gap-2">
-          {/* Trash button — always rendered, opacity controlled */}
           {isMine && (
             <button
               onClick={handleDelete}
               onMouseDown={e => e.preventDefault()}
               disabled={deleting}
-              title="Delete"
               className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mb-0.5 transition-all duration-200"
               style={{
-                background: hovered ? "rgba(239,68,68,.85)" : "rgba(255,255,255,.05)",
-                opacity: hovered ? 1 : 0.25,
-                transform: hovered ? "scale(1)" : "scale(0.8)",
-                boxShadow: hovered ? "0 2px 12px rgba(239,68,68,.4)" : "none",
+                background: "rgba(239,68,68,.85)",
+                opacity: showActions ? 1 : 0,
+                transform: showActions ? "scale(1)" : "scale(0.5)",
+                pointerEvents: showActions ? "auto" : "none",
+                boxShadow: showActions ? "0 2px 12px rgba(239,68,68,.4)" : "none",
               }}
             >
               {deleting
@@ -90,8 +93,11 @@ export default function MessageBubble({ message, onDeleted }) {
             </button>
           )}
 
-          {/* Bubble */}
-          <div className={isMine ? "bubble-out" : "bubble-in"} style={{ padding: "8px 12px 6px 12px" }}>
+          <div
+            className={isMine ? "bubble-out" : "bubble-in"}
+            style={{ padding: "8px 12px 6px 12px", cursor: isMine ? "pointer" : "default" }}
+            onClick={handleBubbleTap}
+          >
             <p className="text-sm leading-relaxed break-words whitespace-pre-wrap"
               style={{ color: isMine ? "#fff" : "var(--text-primary)" }}>
               {message.content}
