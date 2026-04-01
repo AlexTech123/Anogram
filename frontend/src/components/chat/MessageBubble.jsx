@@ -9,32 +9,35 @@ function formatTime(iso) {
 }
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
-const LONG_PRESS_MS = 500;
+const LONG_PRESS_MS  = 500;
+const SWIPE_TRIGGER  = 40;   // px to trigger reply
+const SWIPE_MAX      = 70;   // px max resistance
 
 export default function MessageBubble({ message, onDeleted, showSender, onReply, observerRef, onEdit }) {
   const { user } = useAuth();
   const { lastReadMessageId } = useWebSocket();
 
-  const [showEmoji, setShowEmoji]       = useState(false);
-  const [showContext, setShowContext]    = useState(false); // desktop right-click / mobile long-press
-  const [editing, setEditing]           = useState(false);
-  const [editText, setEditText]         = useState(message.content);
-  const [deleting, setDeleting]         = useState(false);
-  // swipe state
-  const [swipeX, setSwipeX]             = useState(0);
-  const [swiping, setSwiping]           = useState(false);
-  const [swipeTriggered, setSwipeTriggered] = useState(false);
+  const [showEmoji,   setShowEmoji]   = useState(false);
+  const [showContext, setShowContext] = useState(false);
+  const [editing,     setEditing]     = useState(false);
+  const [editText,    setEditText]    = useState(message.content);
+  const [deleting,    setDeleting]    = useState(false);
+  const [swipeX,      setSwipeX]      = useState(0);   // always ≤ 0
+  const [swiping,     setSwiping]     = useState(false);
 
-  const longPressTimer = useRef(null);
-  const touch          = useRef(null);
-  const bubbleRef      = useRef(null);
-  const editRef        = useRef(null);
-  const contextRef     = useRef(null);
+  const longPressTimer  = useRef(null);
+  const longPressFired  = useRef(false);  // ← prevents click after long-press
+  const touch           = useRef(null);
+  const swipeTriggered  = useRef(false);
+  const bubbleRef       = useRef(null);
+  const contextRef      = useRef(null);
+  const editRef         = useRef(null);
 
   const isMine = message.sender_id === user?.id;
   const isRead = isMine && lastReadMessageId !== null && message.id <= lastReadMessageId;
+  const swipeProgress = Math.min(Math.abs(swipeX) / SWIPE_TRIGGER, 1); // 0 → 1
 
-  // Register IntersectionObserver
+  // IntersectionObserver
   useEffect(() => {
     const el = bubbleRef.current;
     if (!el || !observerRef?.current) return;
@@ -46,79 +49,89 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     if (editing) setTimeout(() => editRef.current?.focus(), 30);
   }, [editing]);
 
-  // Close context menu on outside click
+  // Close context on outside click/touch
   useEffect(() => {
     if (!showContext) return;
-    const handler = (e) => {
-      if (contextRef.current && !contextRef.current.contains(e.target)) {
-        setShowContext(false);
-      }
+    const close = (e) => {
+      if (contextRef.current && !contextRef.current.contains(e.target)) setShowContext(false);
     };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("touchstart", handler);
-    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
+    // delay so the touchend that opened it doesn't immediately close it
+    const id = setTimeout(() => {
+      document.addEventListener("mousedown", close);
+      document.addEventListener("touchstart", close);
+    }, 10);
+    return () => {
+      clearTimeout(id);
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
   }, [showContext]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Touch handlers ────────────────────────────────────────────────────────
 
-  // Single tap → toggle emoji row
-  const handleBubbleClick = () => {
-    if (editing) return;
-    if (showContext) { setShowContext(false); return; }
-    setShowEmoji(v => !v);
-    setShowContext(false);
-  };
-
-  // Right-click (desktop) → context menu
-  const handleContextMenu = (e) => {
-    e.preventDefault();
-    setShowContext(v => !v);
-    setShowEmoji(false);
-  };
-
-  // Long press (mobile) → context menu
   const onTouchStart = (e) => {
-    const t = e.touches[0];
-    touch.current = { x: t.clientX, y: t.clientY };
-    setSwipeTriggered(false);
+    longPressFired.current = false;
+    swipeTriggered.current = false;
+    touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+
     longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
       setShowContext(true);
       setShowEmoji(false);
-      // Subtle haptic if available
       navigator.vibrate?.(30);
     }, LONG_PRESS_MS);
   };
 
   const onTouchMove = (e) => {
     if (!touch.current) return;
-    clearTimeout(longPressTimer.current); // cancel long press on move
+    clearTimeout(longPressTimer.current);   // any move cancels long-press
 
     const dx = e.touches[0].clientX - touch.current.x;
     const dy = Math.abs(e.touches[0].clientY - touch.current.y);
-    if (dy > 20) { setSwiping(false); setSwipeX(0); return; }
 
-    // Swipe LEFT to reply
-    if (dx < 0 && dx > -90) {
-      setSwiping(true);
-      setSwipeX(dx);
-      if (dx < -55 && !swipeTriggered) {
-        setSwipeTriggered(true);
-        navigator.vibrate?.(20);
-      }
+    if (dy > 18 || dx > 0) { setSwiping(false); setSwipeX(0); return; }
+
+    // Rubber-band: full movement until SWIPE_TRIGGER, then slows
+    const raw = Math.abs(dx);
+    const dampened = raw <= SWIPE_TRIGGER
+      ? raw
+      : SWIPE_TRIGGER + (raw - SWIPE_TRIGGER) * 0.25;
+    const clamped = Math.min(dampened, SWIPE_MAX);
+
+    setSwiping(true);
+    setSwipeX(-clamped);
+
+    if (raw >= SWIPE_TRIGGER && !swipeTriggered.current) {
+      swipeTriggered.current = true;
+      navigator.vibrate?.(18);
     }
   };
 
   const onTouchEnd = () => {
     clearTimeout(longPressTimer.current);
-    if (swipeX < -55) {
-      onReply?.(message);
-    }
-    // Bounce back animation
+    if (swipeTriggered.current) onReply?.(message);
     setSwipeX(0);
     setSwiping(false);
-    setSwipeTriggered(false);
+    swipeTriggered.current = false;
     touch.current = null;
   };
+
+  // ── Click / context-menu ─────────────────────────────────────────────────
+
+  const handleBubbleClick = () => {
+    if (editing) return;
+    if (longPressFired.current) { longPressFired.current = false; return; } // swallow post-long-press click
+    if (showContext) { setShowContext(false); return; }
+    setShowEmoji(v => !v);
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setShowContext(v => !v);
+    setShowEmoji(false);
+  };
+
+  // ── Actions ───────────────────────────────────────────────────────────────
 
   const handleDelete = async (e) => {
     e?.stopPropagation();
@@ -159,48 +172,25 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     );
   }
 
-  // Swipe: scale icon hint
-  const swipeProgress = Math.min(Math.abs(swipeX) / 55, 1); // 0→1
-
   return (
     <div
       ref={bubbleRef}
       data-message-id={message.id}
       className={`flex ${showSender ? "mt-4" : "mt-1.5"} ${isMine ? "justify-end" : "justify-start"}`}
-      style={{ position: "relative" }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Swipe reply icon — revealed behind the bubble */}
-      <div
-        className="absolute flex items-center justify-center"
-        style={{
-          [isMine ? "right" : "left"]: 0,
-          top: "50%", transform: "translateY(-50%)",
-          width: 36, height: 36, borderRadius: "50%",
-          background: `rgba(124,111,255,${swipeProgress * 0.85})`,
-          opacity: swipeProgress,
-          scale: `${0.5 + swipeProgress * 0.5}`,
-          transition: swiping ? "none" : "opacity .25s, scale .25s",
-          zIndex: 0,
-        }}
-      >
-        <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, fill: "white", opacity: swipeProgress }}>
-          <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
-        </svg>
-      </div>
-
-      {/* Message column */}
+      {/* ── Message column ── */}
       <div
         className={`flex flex-col ${isMine ? "items-end" : "items-start"} max-w-[75%] sm:max-w-[62%]`}
         style={{
-          transform: swipeX ? `translateX(${swipeX * 0.48}px)` : "translateX(0)",
+          transform: swipeX ? `translateX(${swipeX}px)` : "translateX(0)",
           transition: swiping ? "none" : "transform .3s cubic-bezier(.25,.8,.25,1)",
-          zIndex: 1,
           position: "relative",
         }}
       >
+        {/* Sender name */}
         {!isMine && showSender && (
           <div className="flex items-center gap-1.5 mb-1 px-3">
             <Avatar name={message.sender_username || "?"} size={5} src={message.sender_avatar} />
@@ -210,10 +200,32 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
           </div>
         )}
 
-        {/* Bubble + context menu wrapper */}
+        {/* Swipe reply indicator — always to the RIGHT of the bubble column */}
+        <div
+          style={{
+            position: "absolute",
+            right: isMine ? "calc(100% + 6px)" : undefined,
+            left:  isMine ? undefined          : "calc(100% + 6px)",
+            top: "50%",
+            transform: `translateY(-50%) scale(${0.4 + swipeProgress * 0.6})`,
+            width: 30, height: 30,
+            borderRadius: "50%",
+            background: `rgba(124,111,255,${swipeProgress * 0.9})`,
+            opacity: swipeProgress,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: swiping ? "none" : "opacity .25s, transform .25s",
+            pointerEvents: "none",
+          }}
+        >
+          <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: "white" }}>
+            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
+          </svg>
+        </div>
+
+        {/* Bubble + context menu */}
         <div style={{ position: "relative" }}>
           <div
-            className={`${isMine ? "bubble-out animate-msg-in" : "bubble-in animate-msg-in"}`}
+            className={isMine ? "bubble-out animate-msg-in" : "bubble-in animate-msg-in"}
             style={{ padding: "8px 12px 6px 12px", cursor: "pointer", userSelect: "none" }}
             onClick={handleBubbleClick}
             onContextMenu={handleContextMenu}
@@ -269,7 +281,7 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
             </div>
           </div>
 
-          {/* Context menu (right-click / long-press) */}
+          {/* Context menu */}
           {showContext && (
             <div
               ref={contextRef}
@@ -283,7 +295,7 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               }}
             >
               <button onClick={handleReply}
-                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
                 style={{ color: "var(--text-secondary)" }}
                 onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
@@ -294,8 +306,8 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               </button>
               {isMine && (
                 <button onClick={() => { setEditing(true); setShowContext(false); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
-                  style={{ color: "var(--text-secondary)" }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
+                  style={{ color: "var(--text-secondary)", borderTop: "1px solid var(--border)" }}
                   onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
@@ -306,8 +318,8 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               )}
               {isMine && (
                 <button onClick={handleDelete} disabled={deleting}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
-                  style={{ color: "#f87171" }}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
+                  style={{ color: "#f87171", borderTop: "1px solid var(--border)" }}
                   onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,.1)"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
@@ -320,7 +332,7 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
           )}
         </div>
 
-        {/* Emoji row — shown on tap */}
+        {/* Emoji row */}
         {showEmoji && (
           <div className="flex items-center gap-1 mt-1 px-1 animate-fade-in"
             style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}>
@@ -331,6 +343,13 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
                 {e}
               </button>
             ))}
+            {isMine && !editing && (
+              <button onClick={() => { setEditing(true); setShowEmoji(false); }}
+                className="text-xs rounded-xl px-2 py-1 transition-all"
+                style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
+                ✎
+              </button>
+            )}
           </div>
         )}
 
