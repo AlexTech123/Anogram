@@ -75,10 +75,13 @@ export function WebSocketProvider({ chatId, initialReadId, children }) {
         setOnlineUserIds(prev => { const n = new Set(prev); n.delete(data.user_id); return n; });
         break;
       case "read_receipt":
-        // Always advance — never go backwards
         setLastReadMessageId(prev =>
           prev === null || data.message_id > prev ? data.message_id : prev
         );
+        break;
+      case "message_edited":
+      case "reaction_updated":
+        setLastMessage(data);
         break;
     }
   };

@@ -1,10 +1,9 @@
 import asyncio
-
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import auth, chats, media, messages, nicknames, users
+from app.routers import auth, avatars, chats, media, messages, nicknames, users
 from app.websocket.chat_ws import chat_websocket
 from app.websocket.global_ws import global_websocket
 from app.tasks.cleanup import cleanup_inactive_users
@@ -25,6 +24,7 @@ app.include_router(chats.router,     prefix="/api")
 app.include_router(messages.router,  prefix="/api")
 app.include_router(media.router,     prefix="/api")
 app.include_router(nicknames.router, prefix="/api")
+app.include_router(avatars.router,   prefix="/api")
 
 
 @app.on_event("startup")

@@ -39,12 +39,19 @@ def get_chat(chat_id: int, current_user: User = Depends(get_current_user), db: S
     detail.partner_user_id = out.partner_user_id
     detail.unread_count = out.unread_count
 
-    # Find partner's last_read_message_id (what they have read of our messages)
     partner_member = db.query(ChatMember).filter(
         ChatMember.chat_id == chat_id,
         ChatMember.user_id != current_user.id,
     ).first()
     detail.partner_last_read_id = partner_member.last_read_message_id if partner_member else None
+
+    # Pinned message
+    if chat.pinned_message_id:
+        from app.models.message import Message as Msg
+        pinned = db.get(Msg, chat.pinned_message_id)
+        if pinned:
+            from app.services.message_service import _build_message_out
+            detail.pinned_message = _build_message_out(db, pinned, current_user.id)
 
     return detail
 

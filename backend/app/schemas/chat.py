@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel
 from app.schemas.user import UserPublic
+from app.schemas.message import MessageOut
 
 
 class ChatMemberOut(BaseModel):
@@ -32,11 +33,12 @@ class ChatOut(BaseModel):
     last_message: LastMessageOut | None = None
     partner_username: str | None = None
     partner_user_id: int | None = None
+    partner_avatar: str | None = None
     unread_count: int = 0
     model_config = {"from_attributes": True}
 
 
 class ChatDetailOut(ChatOut):
     members: list[ChatMemberOut]
-    # last message ID that the partner has read — used to init double-tick state
     partner_last_read_id: int | None = None
+    pinned_message: MessageOut | None = None

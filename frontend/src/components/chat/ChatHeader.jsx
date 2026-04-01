@@ -5,8 +5,9 @@ import { useGlobalWS } from "../../context/GlobalWSContext";
 import { Avatar } from "../sidebar/Sidebar";
 import { deleteChat } from "../../api/chats";
 import { setNickname as apiSetNickname, deleteNickname as apiDeleteNickname } from "../../api/nicknames";
+import { getLastSeen } from "../../api/users";
 
-export default function ChatHeader({ chat, onBack, onChatDeleted, onRename }) {
+export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSearchToggle }) {
   const { user } = useAuth();
   const { typingUsers } = useWebSocket();
   const { onlineIds } = useGlobalWS();
@@ -15,6 +16,7 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename }) {
   const [deleting, setDeleting] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [nameInput, setNameInput] = useState("");
+  const [lastSeenText, setLastSeenText] = useState(null);
   const inputRef = useRef(null);
 
   const other = chat?.members?.find(m => m.user_id !== user?.id);
@@ -35,6 +37,12 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename }) {
   const isRenamed = chat?.partner_username && chat?.partner_username !== originalUsername;
   const isOnline = other ? (onlineIds?.has(other.user_id) ?? false) : false;
   const typingList = Object.values(typingUsers);
+
+  // Fetch last seen when offline
+  useEffect(() => {
+    if (!other || isOnline) { setLastSeenText(null); return; }
+    getLastSeen(other.user_id).then(r => setLastSeenText(r.data.text)).catch(() => {});
+  }, [other?.user_id, isOnline]);
 
   const commitRename = async () => {
     if (!other) return;
@@ -105,10 +113,22 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename }) {
         ) : (
           <p className="text-xs transition-colors duration-500"
             style={{ color: isOnline ? "var(--online)" : "var(--text-muted)" }}>
-            {isOnline ? "online" : "offline"}
+            {isOnline ? "online" : lastSeenText ? `last seen ${lastSeenText}` : "offline"}
           </p>
         )}
       </div>
+
+      {/* Search toggle */}
+      <button onClick={onSearchToggle}
+        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+        style={{ color: "var(--text-secondary)" }}
+        onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
+        <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 fill-none stroke-current" style={{ width: 18, height: 18 }}
+          strokeWidth="2" strokeLinecap="round">
+          <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </button>
 
       <div className="relative flex-shrink-0">
         <button

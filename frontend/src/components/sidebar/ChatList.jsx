@@ -52,7 +52,7 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser, o
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg-hover)"; }}
               onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
             >
-              <Avatar name={avatarName} size={12} online={partnerOnline} />
+              <Avatar name={avatarName} size={12} online={partnerOnline} src={chat.partner_avatar} />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-2">

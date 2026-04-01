@@ -21,27 +21,43 @@ export function useMessages(chatId) {
   }, [chatId]);
 
   useEffect(() => {
-    if (!lastMessage || lastMessage.type !== "message") return;
-    if (lastMessage.chat_id !== chatId) return;
-    setMessages(prev => {
-      if (prev.some(m => m.id === lastMessage.message_id)) return prev;
-      return [
-        ...prev,
-        {
+    if (!lastMessage) return;
+
+    if (lastMessage.type === "message" && lastMessage.chat_id === chatId) {
+      setMessages(prev => {
+        if (prev.some(m => m.id === lastMessage.message_id)) return prev;
+        return [...prev, {
           id: lastMessage.message_id,
           chat_id: lastMessage.chat_id,
           sender_id: lastMessage.sender_id,
           sender_username: lastMessage.sender_username,
+          sender_avatar: lastMessage.sender_avatar || null,
           content: lastMessage.content || "",
           created_at: lastMessage.created_at,
           message_type: lastMessage.message_type || "text",
           is_deleted: false,
           reply_to: lastMessage.reply_to || null,
           media_url: lastMessage.media_url || null,
-          file_size: lastMessage.file_size || null,
-        },
-      ];
-    });
+          reactions: [],
+        }];
+      });
+    }
+
+    if (lastMessage.type === "message_edited" && lastMessage.chat_id === chatId) {
+      setMessages(prev => prev.map(m =>
+        m.id === lastMessage.message_id
+          ? { ...m, content: lastMessage.content, edited_at: lastMessage.edited_at }
+          : m
+      ));
+    }
+
+    if (lastMessage.type === "reaction_updated" && lastMessage.chat_id === chatId) {
+      setMessages(prev => prev.map(m =>
+        m.id === lastMessage.message_id
+          ? { ...m, reactions: lastMessage.reactions }
+          : m
+      ));
+    }
   }, [lastMessage, chatId]);
 
   const markSeen = () => setNewUnseenCount(0);

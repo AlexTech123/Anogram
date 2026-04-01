@@ -32,6 +32,7 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
 
     partner_username = None
     partner_user_id = None
+    partner_avatar = None
     if chat.chat_type == "dm":
         other = db.query(ChatMember).filter(
             ChatMember.chat_id == chat.id, ChatMember.user_id != current_user_id
@@ -39,7 +40,7 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
         if other:
             u = db.get(User, other.user_id)
             partner_user_id = other.user_id
-            # Check for custom nickname
+            partner_avatar = u.avatar_url if u else None
             nick = db.query(ContactNickname).filter(
                 ContactNickname.owner_id == current_user_id,
                 ContactNickname.contact_user_id == other.user_id,
@@ -60,6 +61,7 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
     out.last_message = last_msg
     out.partner_username = partner_username
     out.partner_user_id = partner_user_id
+    out.partner_avatar = partner_avatar
     out.unread_count = unread_count
     return out
 
