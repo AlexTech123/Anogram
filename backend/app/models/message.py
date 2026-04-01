@@ -19,7 +19,7 @@ class Message(Base):
     edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    chat = relationship("Chat", back_populates="messages")
+    chat = relationship("Chat", back_populates="messages", foreign_keys=[chat_id])
     sender = relationship("User", back_populates="messages")
     reply_to = relationship("Message", remote_side="Message.id", foreign_keys=[reply_to_id])
     reactions = relationship("Reaction", cascade="all, delete-orphan", lazy="joined")
