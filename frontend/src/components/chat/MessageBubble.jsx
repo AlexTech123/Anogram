@@ -52,22 +52,22 @@ export default function MessageBubble({
     if (editing) setTimeout(() => editRef.current?.focus(), 30);
   }, [editing]);
 
-  // Close context menu — only after the opening touch is lifted
+  // Close context menu on outside interaction.
+  // We delay adding the listener by 350ms to let all ghost mouse/touch events
+  // from the long-press gesture pass without prematurely closing the menu.
   useEffect(() => {
     if (!showContext) return;
-    let listening = false;
     const close = (e) => {
-      if (!listening) return;
-      if (contextRef.current && !contextRef.current.contains(e.target)) setShowContext(false);
+      if (contextRef.current && !contextRef.current.contains(e.target)) {
+        setShowContext(false);
+      }
     };
-    document.addEventListener("mousedown", close);
-    const onUp = () => { listening = true; };
-    document.addEventListener("touchend", onUp, { once: true });
-    document.addEventListener("touchstart", close);
+    const id = setTimeout(() => {
+      document.addEventListener("pointerdown", close);
+    }, 350);
     return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("touchend", onUp);
-      document.removeEventListener("touchstart", close);
+      clearTimeout(id);
+      document.removeEventListener("pointerdown", close);
     };
   }, [showContext]);
 
