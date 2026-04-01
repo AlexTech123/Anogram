@@ -14,7 +14,7 @@ const SWIPE_TRIGGER = 40;
 const SWIPE_MAX     = 70;
 
 export default function MessageBubble({
-  message, onDeleted, showSender, onReply, observerRef, onEdit, resolveUsername,
+  message, onDeleted, showSender, isLastInGroup, onReply, observerRef, onEdit, resolveUsername,
 }) {
   const { user } = useAuth();
   const { lastReadMessageId } = useWebSocket();
@@ -31,9 +31,9 @@ export default function MessageBubble({
   const longPressFired = useRef(false);
   const touch          = useRef(null);
   const swipeTriggered = useRef(false);
-  const bubbleRef      = useRef(null);
-  const contextRef     = useRef(null);
-  const editRef        = useRef(null);
+  const bubbleRef  = useRef(null);
+  const contextRef = useRef(null);
+  const editRef    = useRef(null);
 
   const isMine       = message.sender_id === user?.id;
   const isRead       = isMine && lastReadMessageId !== null && message.id <= lastReadMessageId;
@@ -52,24 +52,8 @@ export default function MessageBubble({
     if (editing) setTimeout(() => editRef.current?.focus(), 30);
   }, [editing]);
 
-  // Close context menu on outside interaction.
-  // We delay adding the listener by 350ms to let all ghost mouse/touch events
-  // from the long-press gesture pass without prematurely closing the menu.
-  useEffect(() => {
-    if (!showContext) return;
-    const close = (e) => {
-      if (contextRef.current && !contextRef.current.contains(e.target)) {
-        setShowContext(false);
-      }
-    };
-    const id = setTimeout(() => {
-      document.addEventListener("pointerdown", close);
-    }, 350);
-    return () => {
-      clearTimeout(id);
-      document.removeEventListener("pointerdown", close);
-    };
-  }, [showContext]);
+  // Context menu is closed by a transparent backdrop — no document listeners,
+  // no timing issues with ghost touch events on mobile.
 
   // Touch
   const onTouchStart = (e) => {
@@ -165,7 +149,7 @@ export default function MessageBubble({
     <div
       ref={bubbleRef}
       data-message-id={message.id}
-      className={`flex ${showSender ? "mt-4" : "mt-1.5"} ${isMine ? "justify-end" : "justify-start"}`}
+      className={`flex ${showSender ? "mt-3.5" : "mt-0.5"} ${isMine ? "justify-end" : "justify-start"}`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -213,7 +197,10 @@ export default function MessageBubble({
 
           {/* Bubble */}
           <div
-            className={isMine ? "bubble-out animate-msg-in" : "bubble-in animate-msg-in"}
+            className={`animate-msg-in ${isMine
+              ? isLastInGroup ? "bubble-out" : "bubble-out-notail"
+              : isLastInGroup ? "bubble-in"  : "bubble-in-notail"
+            }`}
             style={{ padding: "8px 12px 6px 12px", cursor: "pointer", userSelect: "none" }}
             onClick={handleBubbleClick}
             onContextMenu={handleContextMenu}
@@ -270,16 +257,26 @@ export default function MessageBubble({
             </div>
           </div>
 
+          {/* Backdrop — closes menu on any outside tap, no timing hacks */}
+          {showContext && (
+            <div
+              style={{ position: "fixed", inset: 0, zIndex: 49 }}
+              onClick={() => setShowContext(false)}
+              onContextMenu={e => { e.preventDefault(); setShowContext(false); }}
+            />
+          )}
+
           {/* Context menu */}
           {showContext && (
             <div ref={contextRef}
-              className="absolute z-50 animate-pop rounded-2xl overflow-hidden shadow-2xl"
+              className="absolute animate-pop rounded-2xl overflow-hidden shadow-2xl"
               style={{
                 [isMine ? "right" : "left"]: 0,
                 bottom: "calc(100% + 6px)",
                 background: "var(--bg-card)",
                 border: "1px solid var(--border)",
                 minWidth: 160,
+                zIndex: 50,
               }}>
               <button onClick={handleReply}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"

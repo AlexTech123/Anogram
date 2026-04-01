@@ -103,13 +103,20 @@ body {
 textarea { caret-color: var(--accent); }
 textarea::placeholder { color: var(--text-muted); }
 
-/* ── Message bubble tails ───────────────────────────────────────────────── */
-.bubble-out {
+/* ── Message bubbles ────────────────────────────────────────────────────── */
+/* Shared base */
+.bubble-out, .bubble-out-notail,
+.bubble-in,  .bubble-in-notail {
   position: relative;
+  word-break: break-word;
+}
+
+/* Outgoing — with tail */
+.bubble-out {
   background: linear-gradient(135deg, var(--msg-out-from), var(--msg-out-to));
   color: #fff;
   border-radius: 18px 18px 4px 18px;
-  box-shadow: 0 4px 20px rgba(91,76,219,.3);
+  box-shadow: 0 3px 16px rgba(91,76,219,.28);
 }
 .bubble-out::after {
   content: "";
@@ -121,8 +128,16 @@ textarea::placeholder { color: var(--text-muted); }
   border-radius: 0 0 3px 0;
 }
 
+/* Outgoing — no tail (middle of group) */
+.bubble-out-notail {
+  background: linear-gradient(135deg, var(--msg-out-from), var(--msg-out-to));
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(91,76,219,.18);
+}
+
+/* Incoming — with tail */
 .bubble-in {
-  position: relative;
   background: var(--msg-in);
   color: var(--text-primary);
   border-radius: 18px 18px 18px 4px;
@@ -136,6 +151,14 @@ textarea::placeholder { color: var(--text-muted); }
   border-right-color: var(--msg-in);
   border-bottom-color: var(--msg-in);
   border-radius: 0 0 0 3px;
+}
+
+/* Incoming — no tail */
+.bubble-in-notail {
+  background: var(--msg-in);
+  color: var(--text-primary);
+  border-radius: 18px;
+  border: 1px solid var(--border);
 }
 
 /* ── Glass card for auth ────────────────────────────────────────────────── */

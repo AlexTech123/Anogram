@@ -228,10 +228,13 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
 
           {displayMessages.map((msg, i) => {
             const prev = displayMessages[i - 1];
+            const next = displayMessages[i + 1];
             const isDM = chat?.chat_type === "dm";
-            // In DMs never show sender name above incoming — only one other person
             const showSender = isDM ? false : (!prev || prev.sender_id !== msg.sender_id);
             const showDate = !searchMode && (!prev || !sameDay(prev.created_at, msg.created_at));
+            // Tail only on the last bubble in a consecutive group from same sender
+            const isLastInGroup = !next || next.sender_id !== msg.sender_id;
+            const partnerOriginal = chat?.members?.find(m => m.user_id !== user?.id)?.user?.username;
             return (
               <div key={msg.id}>
                 {showDate && <DateDivider date={msg.created_at} />}
@@ -239,16 +242,15 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
                   message={msg}
                   onDeleted={handleDeleted}
                   showSender={showSender}
+                  isLastInGroup={isLastInGroup}
                   onReply={setReplyTo}
                   observerRef={observerRef}
                   onEdit={handleEdit}
-                  resolveUsername={(username) => {
-                    // Apply partner nickname to reply quotes
-                    if (chat?.partner_username && username === (chat.members?.find(m => m.user_id !== user?.id)?.user?.username)) {
-                      return chat.partner_username;
-                    }
-                    return username;
-                  }}
+                  resolveUsername={(username) =>
+                    (chat?.partner_username && username === partnerOriginal)
+                      ? chat.partner_username
+                      : username
+                  }
                 />
               </div>
             );
