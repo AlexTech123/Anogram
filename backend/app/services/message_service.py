@@ -77,5 +77,12 @@ def delete_message(db: Session, message_id: int, user_id: int) -> None:
         raise HTTPException(status_code=404, detail="Message not found")
     if msg.sender_id != user_id:
         raise HTTPException(status_code=403, detail="Cannot delete another user's message")
+    # Delete physical media file if present
+    if msg.media_url:
+        try:
+            from app.services.media_service import _delete_media_file
+            _delete_media_file(msg.media_url)
+        except Exception:
+            pass
     db.delete(msg)
     db.commit()

@@ -10,6 +10,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
   const fileRef = useRef(null);
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [recordTime, setRecordTime] = useState(0);
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
@@ -42,14 +43,16 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
     if (!file || !chatId) return;
     e.target.value = "";
     setUploading(true);
+    setUploadProgress(0);
     try {
-      const { data } = await uploadMedia(chatId, file, replyTo?.id ?? null);
+      const { data } = await uploadMedia(chatId, file, replyTo?.id ?? null, setUploadProgress);
       onCancelReply?.();
       onMediaSent?.(data);
     } catch (err) {
       alert(err.response?.data?.detail || "Upload failed");
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -67,7 +70,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
         const file = new File([blob], `voice_${Date.now()}.webm`, { type: "audio/webm" });
         setUploading(true);
         try {
-          const { data } = await uploadMedia(chatId, file, replyTo?.id ?? null);
+          const { data } = await uploadMedia(chatId, file, replyTo?.id ?? null, setUploadProgress);
           onCancelReply?.();
           onMediaSent?.(data);
         } catch (err) {
@@ -121,23 +124,36 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
         {!recording && (
           <>
             <button
-              onClick={() => fileRef.current?.click()}
+              onClick={() => !uploading && fileRef.current?.click()}
               disabled={uploading}
               title="Attach file"
-              className="flex-shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center transition-all active:scale-90"
-              style={{ background: "var(--bg-elevated)", color: uploading ? "var(--text-muted)" : "var(--text-secondary)" }}
+              className="flex-shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center transition-all active:scale-90 relative overflow-hidden"
+              style={{ background: "var(--bg-elevated)", color: uploading ? "var(--accent-light)" : "var(--text-secondary)" }}
               onMouseEnter={e => { if (!uploading) e.currentTarget.style.color = "var(--accent-light)"; }}
-              onMouseLeave={e => { e.currentTarget.style.color = "var(--text-secondary)"; }}
+              onMouseLeave={e => { if (!uploading) e.currentTarget.style.color = "var(--text-secondary)"; }}
             >
-              {uploading
-                ? <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeOpacity=".3"/>
-                    <path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+              {/* Circular progress ring */}
+              {uploading ? (
+                <>
+                  <svg className="absolute inset-0 w-9 h-9 -rotate-90" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(124,111,255,.2)" strokeWidth="2.5"/>
+                    <circle cx="18" cy="18" r="15" fill="none"
+                      stroke="var(--accent)" strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 15}`}
+                      strokeDashoffset={`${2 * Math.PI * 15 * (1 - uploadProgress / 100)}`}
+                      style={{ transition: "stroke-dashoffset .2s ease" }}
+                    />
                   </svg>
-                : <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
-                    <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
-                  </svg>
-              }
+                  <span className="text-xs font-bold relative z-10" style={{ fontSize: 9 }}>
+                    {uploadProgress}%
+                  </span>
+                </>
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                  <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
+                </svg>
+              )}
             </button>
             <input ref={fileRef} type="file" accept="image/*,video/*,audio/*,.pdf" className="hidden" onChange={handleFileChange} />
           </>

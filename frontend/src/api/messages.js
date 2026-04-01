@@ -8,9 +8,13 @@ export const getMessages = (chatId, beforeId = null, limit = 50) => {
 
 export const deleteMessage = (id) => client.delete(`/messages/${id}`);
 
-export const uploadMedia = (chatId, file, replyToId = null) => {
+export const uploadMedia = (chatId, file, replyToId = null, onProgress = null) => {
   const form = new FormData();
   form.append("file", file);
   if (replyToId) form.append("reply_to_id", String(replyToId));
-  return client.post(`/media/upload/${chatId}`, form);
+  return client.post(`/media/upload/${chatId}`, form, {
+    onUploadProgress: onProgress
+      ? e => onProgress(Math.round((e.loaded * 100) / (e.total || 1)))
+      : undefined,
+  });
 };
