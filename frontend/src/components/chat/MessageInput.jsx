@@ -3,7 +3,7 @@ import { useWebSocket } from "../../context/WebSocketContext";
 import { uploadMedia } from "../../api/messages";
 import ReplyBar from "./ReplyBar";
 
-export default function MessageInput({ replyTo, onCancelReply, chatId }) {
+export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSent }) {
   const [text, setText] = useState("");
   const { sendMessage, sendTyping } = useWebSocket();
   const textRef = useRef(null);
@@ -43,8 +43,9 @@ export default function MessageInput({ replyTo, onCancelReply, chatId }) {
     e.target.value = "";
     setUploading(true);
     try {
-      await uploadMedia(chatId, file, replyTo?.id ?? null);
+      const { data } = await uploadMedia(chatId, file, replyTo?.id ?? null);
       onCancelReply?.();
+      onMediaSent?.(data);
     } catch (err) {
       alert(err.response?.data?.detail || "Upload failed");
     } finally {
@@ -66,8 +67,9 @@ export default function MessageInput({ replyTo, onCancelReply, chatId }) {
         const file = new File([blob], `voice_${Date.now()}.webm`, { type: "audio/webm" });
         setUploading(true);
         try {
-          await uploadMedia(chatId, file, replyTo?.id ?? null);
+          const { data } = await uploadMedia(chatId, file, replyTo?.id ?? null);
           onCancelReply?.();
+          onMediaSent?.(data);
         } catch (err) {
           alert(err.response?.data?.detail || "Upload failed");
         } finally {
@@ -104,6 +106,10 @@ export default function MessageInput({ replyTo, onCancelReply, chatId }) {
 
   const formatSecs = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   const hasText = text.trim().length > 0;
+  // getUserMedia requires HTTPS (or localhost) — hide mic on plain HTTP
+  const canRecord = typeof navigator !== "undefined" &&
+    !!navigator.mediaDevices?.getUserMedia &&
+    (location.protocol === "https:" || location.hostname === "localhost");
 
   return (
     <div className="flex-shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
@@ -190,7 +196,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId }) {
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
             </svg>
           </button>
-        ) : (
+        ) : canRecord ? (
           <button onClick={startRecording} disabled={uploading} title="Voice message"
             className="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90"
             style={{ background: "var(--bg-elevated)", color: "var(--text-muted)", opacity: uploading ? .4 : 1 }}

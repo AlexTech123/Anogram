@@ -66,7 +66,7 @@ def save_file(chat_id: int, filename: str, data: bytes) -> tuple[str, int]:
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / safe_name
     dest.write_bytes(data)
-    return f"/media/{chat_id}/{safe_name}", len(data)
+    return f"/api/media/{chat_id}/{safe_name}", len(data)
 
 
 def evict_if_needed(db: Session) -> None:
@@ -92,8 +92,13 @@ def evict_if_needed(db: Session) -> None:
 
 
 def _delete_media_file(url: str) -> None:
-    # url like /media/42/abc.jpg → /app/media/42/abc.jpg
-    relative = url.lstrip("/media").lstrip("/")
+    # url like /api/media/42/abc.jpg → /app/media/42/abc.jpg
+    # Strip the /api/media/ prefix correctly
+    prefix = "/api/media/"
+    if url.startswith(prefix):
+        relative = url[len(prefix):]
+    else:
+        relative = url.lstrip("/").removeprefix("api/").removeprefix("media/")
     path = MEDIA_DIR / relative
     try:
         path.unlink(missing_ok=True)

@@ -232,7 +232,14 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
         )}
       </div>
 
-      <MessageInput replyTo={replyTo} onCancelReply={() => setReplyTo(null)} chatId={chat?.id} />
+      <MessageInput
+        replyTo={replyTo}
+        onCancelReply={() => setReplyTo(null)}
+        chatId={chat?.id}
+        onMediaSent={msg => {
+          setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
+        }}
+      />
     </div>
   );
 }
