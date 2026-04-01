@@ -1,0 +1,18 @@
+{
+  "name": "Anogram",
+  "short_name": "Anogram",
+  "description": "Private anonymous messenger",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0d1a",
+  "theme_color": "#7c6fff",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -50,11 +50,13 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
           className="flex-1 font-black tracking-tight select-none"
           style={{
             fontSize: 23,
-            background: "linear-gradient(90deg, #a78bfa 0%, #818cf8 60%, #60a5fa 100%)",
+            background: "linear-gradient(90deg, #a78bfa, #818cf8, #60a5fa, #c084fc, #a78bfa)",
+            backgroundSize: "300% 100%",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
             fontStyle: "italic",
+            animation: "gradient-shift 6s ease infinite",
           }}
         >
           Anogram

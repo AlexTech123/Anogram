@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models.chat import Chat
 from app.models.chat_member import ChatMember
+from app.models.contact_nickname import ContactNickname
 from app.models.message import Message
 from app.models.user import User
 from app.schemas.chat import ChatCreate, ChatOut, LastMessageOut
@@ -37,8 +38,13 @@ def _build_chat_out(db: Session, chat: Chat, current_user_id: int) -> ChatOut:
         ).first()
         if other:
             u = db.get(User, other.user_id)
-            partner_username = u.username if u else None
             partner_user_id = other.user_id
+            # Check for custom nickname
+            nick = db.query(ContactNickname).filter(
+                ContactNickname.owner_id == current_user_id,
+                ContactNickname.contact_user_id == other.user_id,
+            ).first()
+            partner_username = nick.nickname if nick else (u.username if u else None)
 
     last_read_id = membership.last_read_message_id if membership else None
     unread_q = db.query(Message).filter(

@@ -206,10 +206,15 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               </div>
             )}
 
-            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap"
-              style={{ color: isMine ? "#fff" : "var(--text-primary)" }}>
-              {message.content}
-            </p>
+            {/* Media */}
+            {message.media_url && <MediaPreview msg={message} />}
+
+            {message.content && (
+              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap"
+                style={{ color: isMine ? "#fff" : "var(--text-primary)" }}>
+                {message.content}
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-1.5" style={{ marginTop: 4 }}>
               <span className="text-xs select-none"
@@ -234,6 +239,45 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
         </div>
       </div>
     </div>
+  );
+}
+
+function MediaPreview({ msg }) {
+  const url = msg.media_url;
+  if (msg.message_type === "voice") {
+    return (
+      <div className="mb-1.5" onClick={e => e.stopPropagation()}>
+        <audio controls src={url} preload="metadata"
+          style={{ height: 36, maxWidth: 220, borderRadius: 12 }} />
+      </div>
+    );
+  }
+  if (msg.message_type === "image") {
+    return (
+      <img src={url} alt="" loading="lazy"
+        className="rounded-xl mb-1.5 max-w-full cursor-pointer"
+        style={{ maxHeight: 260, objectFit: "cover" }}
+        onClick={e => { e.stopPropagation(); window.open(url, "_blank"); }} />
+    );
+  }
+  if (msg.message_type === "video") {
+    return (
+      <div className="mb-1.5" onClick={e => e.stopPropagation()}>
+        <video controls src={url} preload="metadata"
+          className="rounded-xl max-w-full" style={{ maxHeight: 260 }} />
+      </div>
+    );
+  }
+  return (
+    <a href={url} target="_blank" rel="noreferrer"
+      className="flex items-center gap-2 mb-1.5 px-3 py-2 rounded-xl text-xs no-underline"
+      style={{ background: "rgba(255,255,255,.08)", color: "inherit" }}
+      onClick={e => e.stopPropagation()}>
+      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
+        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+      </svg>
+      <span className="truncate">{url.split("/").pop()}</span>
+    </a>
   );
 }
 

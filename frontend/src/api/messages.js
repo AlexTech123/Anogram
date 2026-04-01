@@ -12,7 +12,5 @@ export const uploadMedia = (chatId, file, replyToId = null) => {
   const form = new FormData();
   form.append("file", file);
   if (replyToId) form.append("reply_to_id", String(replyToId));
-  return client.post(`/media/upload/${chatId}`, form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  return client.post(`/media/upload/${chatId}`, form);
 };

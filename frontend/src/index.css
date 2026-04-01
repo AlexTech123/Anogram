@@ -54,6 +54,11 @@ body {
   0%,60%,100% { transform:translateY(0); opacity:.6 }
   30%         { transform:translateY(-4px); opacity:1 }
 }
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .animate-fade-in  { animation: fadeIn  .18s ease forwards; }

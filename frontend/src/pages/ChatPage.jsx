@@ -34,13 +34,7 @@ export default function ChatPage() {
         getChat(activeChatIdRef.current)
           .then(({ data }) => {
             if (data.chat_type === "dm") {
-              const other = data.members?.find(m => m.user_id !== user?.id);
-              data.name = (() => {
-                try {
-                  const nk = JSON.parse(localStorage.getItem("anogram_nicknames") || "{}");
-                  return nk[String(other?.user_id)] || other?.user?.username || "Direct Message";
-                } catch { return other?.user?.username || "Direct Message"; }
-              })();
+              data.name = data.partner_username || "Direct Message";
             }
             setActiveChat(data);
           })
@@ -87,15 +81,8 @@ export default function ChatPage() {
     // Don't zero unread here — let IntersectionObserver do it when messages are actually visible
     const { data } = await getChat(id);
     if (data.chat_type === "dm") {
-      const other = data.members?.find(m => m.user_id !== user?.id);
-      const otherUsername = other?.user?.username || "Direct Message";
-      // Apply local custom nickname if set
-      try {
-        const nk = JSON.parse(localStorage.getItem("anogram_nicknames") || "{}");
-        data.name = nk[String(other?.user_id)] || otherUsername;
-      } catch {
-        data.name = otherUsername;
-      }
+      // partner_username already contains nickname from server if set
+      data.name = data.partner_username || "Direct Message";
     }
     setPartnerLastReadId(data.partner_last_read_id ?? null);
     setActiveChat(data);
@@ -143,11 +130,12 @@ export default function ChatPage() {
             onMessagesRead={handleMessagesRead}
             onUnreadIncrement={handleUnreadIncrement}
             onRename={(newName) => {
-              // Update display name in sidebar and active chat
               setChats(prev => prev.map(c =>
                 c.id === activeChatId ? { ...c, partner_username: newName.replace(/^@/, "") } : c
               ));
-              setActiveChat(prev => prev ? { ...prev, name: newName } : prev);
+              setActiveChat(prev => prev ? { ...prev, name: newName, partner_username: newName } : prev);
+              // Reload full list so server-side nickname applies everywhere
+              loadChats();
             }}
           />
         }
