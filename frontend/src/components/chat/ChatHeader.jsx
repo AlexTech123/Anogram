@@ -30,11 +30,12 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
 
   if (!chat) return null;
 
-  const displayName = chat?.partner_username
-    ? `@${chat.partner_username}`
-    : (chat.name || "Direct Message");
   const originalUsername = other?.user?.username || "";
   const isRenamed = chat?.partner_username && chat?.partner_username !== originalUsername;
+  // Show @ only when displaying original username, not a custom nickname
+  const displayName = isRenamed
+    ? chat.partner_username
+    : (originalUsername ? `@${originalUsername}` : (chat.name || "Direct Message"));
   const isOnline = other ? (onlineIds?.has(other.user_id) ?? false) : false;
   const typingList = Object.values(typingUsers);
 

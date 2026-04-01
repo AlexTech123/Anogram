@@ -228,7 +228,9 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
 
           {displayMessages.map((msg, i) => {
             const prev = displayMessages[i - 1];
-            const showSender = !prev || prev.sender_id !== msg.sender_id;
+            const isDM = chat?.chat_type === "dm";
+            // In DMs never show sender name above incoming — only one other person
+            const showSender = isDM ? false : (!prev || prev.sender_id !== msg.sender_id);
             const showDate = !searchMode && (!prev || !sameDay(prev.created_at, msg.created_at));
             return (
               <div key={msg.id}>
@@ -240,6 +242,13 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
                   onReply={setReplyTo}
                   observerRef={observerRef}
                   onEdit={handleEdit}
+                  resolveUsername={(username) => {
+                    // Apply partner nickname to reply quotes
+                    if (chat?.partner_username && username === (chat.members?.find(m => m.user_id !== user?.id)?.user?.username)) {
+                      return chat.partner_username;
+                    }
+                    return username;
+                  }}
                 />
               </div>
             );

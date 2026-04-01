@@ -8,12 +8,14 @@ function formatTime(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
-const LONG_PRESS_MS  = 500;
-const SWIPE_TRIGGER  = 40;   // px to trigger reply
-const SWIPE_MAX      = 70;   // px max resistance
+const QUICK_EMOJIS  = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+const LONG_PRESS_MS = 500;
+const SWIPE_TRIGGER = 40;
+const SWIPE_MAX     = 70;
 
-export default function MessageBubble({ message, onDeleted, showSender, onReply, observerRef, onEdit }) {
+export default function MessageBubble({
+  message, onDeleted, showSender, onReply, observerRef, onEdit, resolveUsername,
+}) {
   const { user } = useAuth();
   const { lastReadMessageId } = useWebSocket();
 
@@ -22,22 +24,23 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
   const [editing,     setEditing]     = useState(false);
   const [editText,    setEditText]    = useState(message.content);
   const [deleting,    setDeleting]    = useState(false);
-  const [swipeX,      setSwipeX]      = useState(0);   // always ≤ 0
+  const [swipeX,      setSwipeX]      = useState(0);
   const [swiping,     setSwiping]     = useState(false);
 
-  const longPressTimer  = useRef(null);
-  const longPressFired  = useRef(false);  // ← prevents click after long-press
-  const touch           = useRef(null);
-  const swipeTriggered  = useRef(false);
-  const bubbleRef       = useRef(null);
-  const contextRef      = useRef(null);
-  const editRef         = useRef(null);
+  const longPressTimer = useRef(null);
+  const longPressFired = useRef(false);
+  const touch          = useRef(null);
+  const swipeTriggered = useRef(false);
+  const bubbleRef      = useRef(null);
+  const contextRef     = useRef(null);
+  const editRef        = useRef(null);
 
-  const isMine = message.sender_id === user?.id;
-  const isRead = isMine && lastReadMessageId !== null && message.id <= lastReadMessageId;
-  const swipeProgress = Math.min(Math.abs(swipeX) / SWIPE_TRIGGER, 1); // 0 → 1
+  const isMine       = message.sender_id === user?.id;
+  const isRead       = isMine && lastReadMessageId !== null && message.id <= lastReadMessageId;
+  const swipeProgress = Math.min(Math.abs(swipeX) / SWIPE_TRIGGER, 1);
 
-  // IntersectionObserver
+  const rn = (name) => resolveUsername?.(name) ?? name; // resolve nickname helper
+
   useEffect(() => {
     const el = bubbleRef.current;
     if (!el || !observerRef?.current) return;
@@ -49,31 +52,30 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     if (editing) setTimeout(() => editRef.current?.focus(), 30);
   }, [editing]);
 
-  // Close context on outside click/touch
+  // Close context menu — only after the opening touch is lifted
   useEffect(() => {
     if (!showContext) return;
+    let listening = false;
     const close = (e) => {
+      if (!listening) return;
       if (contextRef.current && !contextRef.current.contains(e.target)) setShowContext(false);
     };
-    // delay so the touchend that opened it doesn't immediately close it
-    const id = setTimeout(() => {
-      document.addEventListener("mousedown", close);
-      document.addEventListener("touchstart", close);
-    }, 10);
+    document.addEventListener("mousedown", close);
+    const onUp = () => { listening = true; };
+    document.addEventListener("touchend", onUp, { once: true });
+    document.addEventListener("touchstart", close);
     return () => {
-      clearTimeout(id);
       document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchend", onUp);
       document.removeEventListener("touchstart", close);
     };
   }, [showContext]);
 
-  // ── Touch handlers ────────────────────────────────────────────────────────
-
+  // Touch
   const onTouchStart = (e) => {
     longPressFired.current = false;
     swipeTriggered.current = false;
     touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-
     longPressTimer.current = setTimeout(() => {
       longPressFired.current = true;
       setShowContext(true);
@@ -84,23 +86,17 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
 
   const onTouchMove = (e) => {
     if (!touch.current) return;
-    clearTimeout(longPressTimer.current);   // any move cancels long-press
-
+    clearTimeout(longPressTimer.current);
     const dx = e.touches[0].clientX - touch.current.x;
     const dy = Math.abs(e.touches[0].clientY - touch.current.y);
-
     if (dy > 18 || dx > 0) { setSwiping(false); setSwipeX(0); return; }
-
-    // Rubber-band: full movement until SWIPE_TRIGGER, then slows
     const raw = Math.abs(dx);
-    const dampened = raw <= SWIPE_TRIGGER
-      ? raw
-      : SWIPE_TRIGGER + (raw - SWIPE_TRIGGER) * 0.25;
-    const clamped = Math.min(dampened, SWIPE_MAX);
-
+    const clamped = Math.min(
+      raw <= SWIPE_TRIGGER ? raw : SWIPE_TRIGGER + (raw - SWIPE_TRIGGER) * 0.25,
+      SWIPE_MAX
+    );
     setSwiping(true);
     setSwipeX(-clamped);
-
     if (raw >= SWIPE_TRIGGER && !swipeTriggered.current) {
       swipeTriggered.current = true;
       navigator.vibrate?.(18);
@@ -110,17 +106,14 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
   const onTouchEnd = () => {
     clearTimeout(longPressTimer.current);
     if (swipeTriggered.current) onReply?.(message);
-    setSwipeX(0);
-    setSwiping(false);
+    setSwipeX(0); setSwiping(false);
     swipeTriggered.current = false;
     touch.current = null;
   };
 
-  // ── Click / context-menu ─────────────────────────────────────────────────
-
   const handleBubbleClick = () => {
     if (editing) return;
-    if (longPressFired.current) { longPressFired.current = false; return; } // swallow post-long-press click
+    if (longPressFired.current) { longPressFired.current = false; return; }
     if (showContext) { setShowContext(false); return; }
     setShowEmoji(v => !v);
   };
@@ -131,13 +124,10 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
     setShowEmoji(false);
   };
 
-  // ── Actions ───────────────────────────────────────────────────────────────
-
   const handleDelete = async (e) => {
     e?.stopPropagation();
     if (deleting) return;
-    setDeleting(true);
-    setShowContext(false);
+    setDeleting(true); setShowContext(false);
     try { await deleteMessage(message.id); onDeleted(message.id); }
     catch { setDeleting(false); }
   };
@@ -145,8 +135,7 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
   const handleReply = (e) => {
     e?.stopPropagation();
     onReply?.(message);
-    setShowContext(false);
-    setShowEmoji(false);
+    setShowContext(false); setShowEmoji(false);
   };
 
   const handleReact = async (emoji) => {
@@ -181,7 +170,7 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* ── Message column ── */}
+      {/* Message column */}
       <div
         className={`flex flex-col ${isMine ? "items-end" : "items-start"} max-w-[75%] sm:max-w-[62%]`}
         style={{
@@ -190,51 +179,51 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
           position: "relative",
         }}
       >
-        {/* Sender name */}
+        {/* Sender name (group chats only) */}
         {!isMine && showSender && (
           <div className="flex items-center gap-1.5 mb-1 px-3">
             <Avatar name={message.sender_username || "?"} size={5} src={message.sender_avatar} />
             <span className="text-xs font-semibold" style={{ color: "var(--accent-light)" }}>
-              @{message.sender_username}
+              @{rn(message.sender_username)}
             </span>
           </div>
         )}
 
-        {/* Swipe reply indicator — always to the RIGHT of the bubble column */}
-        <div
-          style={{
-            position: "absolute",
-            right: isMine ? "calc(100% + 6px)" : undefined,
-            left:  isMine ? undefined          : "calc(100% + 6px)",
-            top: "50%",
-            transform: `translateY(-50%) scale(${0.4 + swipeProgress * 0.6})`,
-            width: 30, height: 30,
-            borderRadius: "50%",
-            background: `rgba(124,111,255,${swipeProgress * 0.9})`,
-            opacity: swipeProgress,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transition: swiping ? "none" : "opacity .25s, transform .25s",
-            pointerEvents: "none",
-          }}
-        >
+        {/* Swipe reply indicator */}
+        <div style={{
+          position: "absolute",
+          right: isMine ? "calc(100% + 6px)" : undefined,
+          left:  isMine ? undefined : "calc(100% + 6px)",
+          top: "50%",
+          transform: `translateY(-50%) scale(${0.4 + swipeProgress * 0.6})`,
+          width: 30, height: 30, borderRadius: "50%",
+          background: `rgba(124,111,255,${swipeProgress * 0.9})`,
+          opacity: swipeProgress,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: swiping ? "none" : "opacity .25s, transform .25s",
+          pointerEvents: "none",
+        }}>
           <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: "white" }}>
             <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
           </svg>
         </div>
 
-        {/* Bubble + context menu */}
+        {/* Bubble wrapper — position:relative so emoji overlay is anchored here */}
         <div style={{ position: "relative" }}>
+
+          {/* Bubble */}
           <div
             className={isMine ? "bubble-out animate-msg-in" : "bubble-in animate-msg-in"}
             style={{ padding: "8px 12px 6px 12px", cursor: "pointer", userSelect: "none" }}
             onClick={handleBubbleClick}
             onContextMenu={handleContextMenu}
           >
+            {/* Reply quote */}
             {message.reply_to && (
               <div className="rounded-xl px-3 py-2 mb-2 text-xs"
                 style={{ background: isMine ? "rgba(0,0,0,.2)" : "var(--bg-elevated)", borderLeft: `3px solid ${isMine ? "rgba(255,255,255,.4)" : "var(--accent)"}` }}>
                 <p className="font-semibold mb-0.5 truncate" style={{ color: isMine ? "rgba(255,255,255,.7)" : "var(--accent-light)" }}>
-                  @{message.reply_to.sender_username}
+                  @{rn(message.reply_to.sender_username)}
                 </p>
                 <p className="truncate" style={{ color: isMine ? "rgba(255,255,255,.55)" : "var(--text-muted)" }}>
                   {message.reply_to.content || "Message deleted"}
@@ -283,8 +272,7 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
 
           {/* Context menu */}
           {showContext && (
-            <div
-              ref={contextRef}
+            <div ref={contextRef}
               className="absolute z-50 animate-pop rounded-2xl overflow-hidden shadow-2xl"
               style={{
                 [isMine ? "right" : "left"]: 0,
@@ -292,8 +280,7 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
                 background: "var(--bg-card)",
                 border: "1px solid var(--border)",
                 minWidth: 160,
-              }}
-            >
+              }}>
               <button onClick={handleReply}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
                 style={{ color: "var(--text-secondary)" }}
@@ -330,28 +317,47 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
               )}
             </div>
           )}
-        </div>
 
-        {/* Emoji row */}
-        {showEmoji && (
-          <div className="flex items-center gap-1 mt-1 px-1 animate-fade-in"
-            style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}>
-            {QUICK_EMOJIS.map(e => (
+          {/* Emoji overlay — floats above bubble, no layout shift */}
+          <div style={{
+            position: "absolute",
+            [isMine ? "right" : "left"]: 0,
+            bottom: "calc(100% + 4px)",
+            display: "flex", alignItems: "center", gap: 2,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: 16,
+            padding: "4px 6px",
+            boxShadow: "0 4px 20px rgba(0,0,0,.4)",
+            opacity: showEmoji ? 1 : 0,
+            transform: showEmoji ? "translateY(0) scale(1)" : "translateY(6px) scale(0.9)",
+            pointerEvents: showEmoji ? "auto" : "none",
+            transition: "opacity .18s ease, transform .18s cubic-bezier(.34,1.56,.64,1)",
+            zIndex: 10,
+            whiteSpace: "nowrap",
+          }}>
+            {QUICK_EMOJIS.map((e, i) => (
               <button key={e} onClick={() => handleReact(e)}
-                className="text-lg rounded-xl transition-all hover:scale-125 active:scale-90"
-                style={{ lineHeight: 1, padding: "2px 4px" }}>
+                className="transition-all hover:scale-125 active:scale-90"
+                style={{
+                  fontSize: 20, lineHeight: 1, padding: "1px 3px",
+                  opacity: showEmoji ? 1 : 0,
+                  transform: showEmoji ? "scale(1)" : "scale(0.5)",
+                  transition: `opacity .15s ease ${i * 25}ms, transform .18s cubic-bezier(.34,1.56,.64,1) ${i * 25}ms`,
+                }}>
                 {e}
               </button>
             ))}
             {isMine && !editing && (
               <button onClick={() => { setEditing(true); setShowEmoji(false); }}
-                className="text-xs rounded-xl px-2 py-1 transition-all"
+                className="text-xs rounded-xl px-2 py-1 transition-all ml-1"
                 style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
                 ✎
               </button>
             )}
           </div>
-        )}
+
+        </div>{/* end bubble wrapper */}
 
         {/* Reaction bubbles */}
         {message.reactions?.length > 0 && (
@@ -371,7 +377,8 @@ export default function MessageBubble({ message, onDeleted, showSender, onReply,
             ))}
           </div>
         )}
-      </div>
+
+      </div>{/* end message column */}
     </div>
   );
 }

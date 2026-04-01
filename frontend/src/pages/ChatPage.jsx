@@ -66,6 +66,15 @@ export default function ChatPage() {
       });
     }
 
+    if (lastEvent.type === "chat_preview_updated") {
+      const { chat_id, content, sender_username, created_at } = lastEvent;
+      setChats(prev => prev.map(c =>
+        c.id === chat_id
+          ? { ...c, last_message: created_at ? { content, sender_username, created_at } : null }
+          : c
+      ));
+    }
+
     if (lastEvent.type === "chat_deleted") {
       const { chat_id } = lastEvent;
       setChats(prev => prev.filter(c => c.id !== chat_id));

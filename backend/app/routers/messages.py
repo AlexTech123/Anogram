@@ -85,12 +85,44 @@ async def react(
 
 
 @router.delete("/{message_id}", status_code=204)
-def remove_message(
+async def remove_message(
     message_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    from app.models.message import Message as Msg
+    from app.core.global_ws_manager import global_manager
+
+    msg = db.get(Msg, message_id)
+    if not msg:
+        return
+    chat_id = msg.chat_id
+
+    # Find new last message before deleting this one
+    from app.models.chat_member import ChatMember as CM
+    members = db.query(CM).filter(CM.chat_id == chat_id).all()
+
     delete_message(db, message_id, current_user.id)
+
+    # Find new last message after deletion
+    last = (
+        db.query(Msg)
+        .filter(Msg.chat_id == chat_id, Msg.is_deleted == False)
+        .order_by(Msg.created_at.desc())
+        .first()
+    )
+    from app.models.user import User as U
+    last_sender = db.get(U, last.sender_id) if last and last.sender_id else None
+
+    # Notify all members to refresh sidebar
+    for m in members:
+        await global_manager.notify(m.user_id, {
+            "type": "chat_preview_updated",
+            "chat_id": chat_id,
+            "content": last.content if last else "",
+            "sender_username": last_sender.username if last_sender else None,
+            "created_at": last.created_at.isoformat() if last else None,
+        })
 
 
 @router.post("/{chat_id}/pin/{message_id}", response_model=MessageOut)
