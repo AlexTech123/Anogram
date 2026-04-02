@@ -22,6 +22,7 @@ export default function MessageBubble({
 
   const [showEmoji,   setShowEmoji]   = useState(false);
   const [showContext, setShowContext] = useState(false);
+  const [contextPos,  setContextPos]  = useState(null);
   const [editing,     setEditing]     = useState(false);
   const [editText,    setEditText]    = useState(message.content);
   const [deleting,    setDeleting]    = useState(false);
@@ -65,8 +66,7 @@ export default function MessageBubble({
     longPressTimer.current = setTimeout(() => {
       longPressFired.current = true;
       menuOpening.current    = true;  // finger still down
-      setShowContext(true);
-      setShowEmoji(false);
+      openContextMenu();
       navigator.vibrate?.(30);
     }, LONG_PRESS_MS);
   };
@@ -107,10 +107,24 @@ export default function MessageBubble({
     setShowEmoji(v => !v);
   };
 
+  const openContextMenu = () => {
+    if (bubbleRef.current) {
+      const rect = bubbleRef.current.getBoundingClientRect();
+      setContextPos({
+        bottom: window.innerHeight - rect.top + 6,
+        ...(isMine
+          ? { right: window.innerWidth - rect.right }
+          : { left: rect.left }),
+      });
+    }
+    setShowContext(true);
+    setShowEmoji(false);
+  };
+
   const handleContextMenu = (e) => {
     e.preventDefault();
-    setShowContext(v => !v);
-    setShowEmoji(false);
+    if (showContext) { setShowContext(false); return; }
+    openContextMenu();
   };
 
   const handleDelete = async (e) => {
@@ -264,70 +278,71 @@ export default function MessageBubble({
             </div>
           </div>
 
-          {/* Backdrop via portal — rendered at document.body so z-index is
-              guaranteed above all message bubbles regardless of stacking context */}
-          {showContext && createPortal(
-            <div
-              style={{ position: "fixed", inset: 0, zIndex: 999 }}
-              onTouchStart={(e) => {
-                e.stopPropagation(); // stop bubbling to message row → prevents new long-press timer
-                if (!menuOpening.current) setShowContext(false);
-              }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-                setShowContext(false);
-              }}
-            />,
-            document.body
-          )}
-
-          {/* Context menu sits above the portal backdrop */}
-          {showContext && (
-            <div ref={contextRef}
-              className="absolute animate-pop rounded-2xl overflow-hidden shadow-2xl"
-              style={{
-                [isMine ? "right" : "left"]: 0,
-                bottom: "calc(100% + 6px)",
-                background: "var(--bg-card)",
-                border: "1px solid var(--border)",
-                minWidth: 160,
-                zIndex: 1000,
-              }}>
-              <button onClick={handleReply}
-                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
-                style={{ color: "var(--text-secondary)" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
-                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
-                  <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
-                </svg>
-                Ответить
-              </button>
-              {isMine && (
-                <button onClick={() => { setEditing(true); setShowContext(false); }}
+          {/* Backdrop + context menu both in portal to body — avoids stacking
+              context created by transform on the message column div */}
+          {showContext && contextPos && createPortal(
+            <>
+              {/* Transparent backdrop to catch outside taps/clicks */}
+              <div
+                style={{ position: "fixed", inset: 0, zIndex: 999 }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  if (!menuOpening.current) setShowContext(false);
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setShowContext(false);
+                }}
+              />
+              {/* Context menu above backdrop */}
+              <div ref={contextRef}
+                className="animate-pop rounded-2xl overflow-hidden shadow-2xl"
+                style={{
+                  position: "fixed",
+                  bottom: contextPos.bottom,
+                  ...(contextPos.right !== undefined ? { right: contextPos.right } : { left: contextPos.left }),
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  minWidth: 160,
+                  zIndex: 1000,
+                }}>
+                <button onClick={handleReply}
                   className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
-                  style={{ color: "var(--text-secondary)", borderTop: "1px solid var(--border)" }}
+                  style={{ color: "var(--text-secondary)" }}
                   onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
                   </svg>
-                  Изменить
+                  Ответить
                 </button>
-              )}
-              {isMine && (
-                <button onClick={handleDelete} disabled={deleting}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
-                  style={{ color: "#f87171", borderTop: "1px solid var(--border)" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,.1)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                  </svg>
-                  {deleting ? "Удаление…" : "Удалить"}
-                </button>
-              )}
-            </div>
+                {isMine && (
+                  <button onClick={() => { setEditing(true); setShowContext(false); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
+                    style={{ color: "var(--text-secondary)", borderTop: "1px solid var(--border)" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}>
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                    Изменить
+                  </button>
+                )}
+                {isMine && (
+                  <button onClick={handleDelete} disabled={deleting}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
+                    style={{ color: "#f87171", borderTop: "1px solid var(--border)" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,.1)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                    {deleting ? "Удаление…" : "Удалить"}
+                  </button>
+                )}
+              </div>
+            </>,
+            document.body
           )}
 
           {/* Emoji overlay — floats above bubble, no layout shift */}
