@@ -16,6 +16,8 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
   const audioChunks = useRef([]);
   const timerRef = useRef(null);
 
+  const sendBtnRef = useRef(null);
+
   const send = () => {
     const content = text.trim();
     if (!content) return;
@@ -23,6 +25,12 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
     setText("");
     onCancelReply?.();
     if (textRef.current) { textRef.current.style.height = "auto"; textRef.current.focus(); }
+    // bounce animation
+    if (sendBtnRef.current) {
+      sendBtnRef.current.classList.remove("animate-send");
+      void sendBtnRef.current.offsetWidth;
+      sendBtnRef.current.classList.add("animate-send");
+    }
   };
 
   const onKey = (e) => {
@@ -117,8 +125,8 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
   return (
     <div className="flex-shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <ReplyBar replyTo={replyTo} onCancel={onCancelReply} />
-      <div className="flex items-center gap-2 px-3 py-2.5"
-        style={{ background: "var(--bg-sidebar)", borderTop: replyTo ? "none" : "1px solid var(--border)" }}>
+      <div className="glass-panel flex items-center gap-2 px-3 py-2.5"
+        style={{ borderTop: replyTo ? "none" : "1px solid var(--glass-border)" }}>
 
         {/* Attach */}
         {!recording && (
@@ -205,8 +213,8 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
             </svg>
           </button>
         ) : hasText ? (
-          <button onClick={send} onMouseDown={e => e.preventDefault()}
-            className="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-90"
+          <button ref={sendBtnRef} onClick={send} onMouseDown={e => e.preventDefault()}
+            className="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-colors duration-200"
             style={{ background: "var(--accent-gradient)", boxShadow: "0 4px 16px rgba(99,102,241,.5)" }}>
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" style={{ transform: "translateX(1px)" }}>
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>

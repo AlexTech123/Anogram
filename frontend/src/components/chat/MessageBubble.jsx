@@ -168,7 +168,7 @@ export default function MessageBubble({
     <div
       ref={bubbleRef}
       data-message-id={message.id}
-      className={`flex ${showSender ? "mt-3.5" : "mt-0.5"} ${isMine ? "justify-end" : "justify-start"}`}
+      className={`flex ${showSender ? "mt-4" : "mt-1.5"} ${isMine ? "justify-end" : "justify-start"}`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}

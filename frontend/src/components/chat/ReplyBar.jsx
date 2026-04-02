@@ -2,10 +2,12 @@ export default function ReplyBar({ replyTo, onCancel }) {
   if (!replyTo) return null;
   return (
     <div
-      className="flex items-center gap-3 px-4 py-2.5 animate-fade-in"
+      className="flex items-center gap-3 px-4 py-2.5 animate-slide-up-spring"
       style={{
-        background: "var(--bg-sidebar)",
-        borderTop: "1px solid var(--border)",
+        background: "var(--glass-bg)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderTop: "1px solid var(--glass-border)",
         borderLeft: "3px solid var(--accent)",
       }}
     >

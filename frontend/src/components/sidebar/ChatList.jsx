@@ -50,7 +50,10 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser, o
             <button
               onClick={() => onSelect(chat.id)}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150 active:scale-[.98]"
-              style={{ background: isActive ? "var(--bg-active)" : "transparent" }}
+              style={{
+                background: isActive ? "var(--bg-active)" : "transparent",
+                boxShadow: isActive ? "inset 3px 0 0 var(--accent)" : "none",
+              }}
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg-hover)"; }}
               onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
             >
@@ -79,7 +82,7 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser, o
                       style={{
                         background: "var(--accent-gradient)",
                         fontSize: 10, minWidth: 18, height: 18, padding: "0 4px",
-                        boxShadow: "0 2px 8px rgba(99,102,241,.5)",
+                        animation: "badge-pulse 2.5s ease-in-out infinite",
                       }}>
                       {unread > 99 ? "99+" : unread}
                     </span>

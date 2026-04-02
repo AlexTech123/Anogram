@@ -40,6 +40,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
   const { messages: fetched, loading, newUnseenCount, setNewUnseenCount, markSeen } = useMessages(chat?.id);
   const [messages, setMessages] = useState([]);
   const [replyTo, setReplyTo] = useState(null);
+  const deletedIdsRef = useRef(new Set());
   const [atBottom, setAtBottom] = useState(true);
   const [searchMode, setSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,7 +54,14 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
   const onUnreadIncrementRef = useRef(onUnreadIncrement);
   useEffect(() => { onUnreadIncrementRef.current = onUnreadIncrement; }, [onUnreadIncrement]);
 
-  useEffect(() => { setMessages(fetched); setReplyTo(null); }, [fetched]);
+  useEffect(() => {
+    deletedIdsRef.current = new Set();
+    setReplyTo(null);
+  }, [chat?.id]);
+
+  useEffect(() => {
+    setMessages(fetched.filter(m => !deletedIdsRef.current.has(m.id)));
+  }, [fetched]);
 
   useEffect(() => {
     if (!listRef.current || !atBottom) return;
@@ -108,7 +116,10 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
     if (bottom) { markSeen(); onMessagesRead?.(chat?.id); }
   }, [chat?.id]);
 
-  const handleDeleted = (id) => setMessages(prev => prev.filter(m => m.id !== id));
+  const handleDeleted = (id) => {
+    deletedIdsRef.current.add(id);
+    setMessages(prev => prev.filter(m => m.id !== id));
+  };
   const handleEdit = (id, content) => setMessages(prev => prev.map(m =>
     m.id === id ? { ...m, content, edited_at: new Date().toISOString() } : m
   ));
@@ -138,11 +149,11 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
         {/* Animated floating blobs */}
         <div style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden" }}>
           {[
-            { w:500, h:500, t:"8%",  l:"10%", c:"rgba(99,102,241,.12)",  blur:45, anim:"blobDrift",  dur:"14s", delay:"0s"  },
-            { w:420, h:420, b:"12%", r:"8%",  c:"rgba(139,92,246,.10)", blur:55, anim:"blobDrift2", dur:"17s", delay:"2s"  },
-            { w:320, h:320, t:"45%", r:"30%", c:"rgba(59,130,246,.08)",  blur:40, anim:"blobDrift3", dur:"10s", delay:"4s"  },
-            { w:280, h:280, b:"25%", l:"20%", c:"rgba(232,121,249,.07)", blur:45, anim:"blobDrift",  dur:"20s", delay:"7s"  },
-            { w:200, h:200, t:"20%", r:"15%", c:"rgba(124,111,255,.09)", blur:35, anim:"blobDrift2", dur:"12s", delay:"3s"  },
+            { w:500, h:500, t:"8%",  l:"10%", c:"rgba(99,102,241,.12)",  blur:45, anim:"blobDrift",  dur:"7s",  delay:"0s"  },
+            { w:420, h:420, b:"12%", r:"8%",  c:"rgba(139,92,246,.10)", blur:55, anim:"blobDrift2", dur:"9s",  delay:"1s"  },
+            { w:320, h:320, t:"45%", r:"30%", c:"rgba(59,130,246,.08)",  blur:40, anim:"blobDrift3", dur:"5s",  delay:"2s"  },
+            { w:280, h:280, b:"25%", l:"20%", c:"rgba(232,121,249,.07)", blur:45, anim:"blobDrift",  dur:"11s", delay:"3s"  },
+            { w:200, h:200, t:"20%", r:"15%", c:"rgba(124,111,255,.09)", blur:35, anim:"blobDrift2", dur:"6s",  delay:"1.5s"},
           ].map((b, i) => (
             <div key={i} style={{
               position:"absolute",
@@ -191,7 +202,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
   const displayMessages = searchMode && searchQuery ? searchResults : messages;
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden" style={{ background: "var(--bg-base)" }}>
+    <div className="chat-bg flex flex-col w-full h-full overflow-hidden">
       <ChatHeader chat={chat} onBack={onBack} onChatDeleted={onChatDeleted} onRename={onRename}
         onSearchToggle={() => { setSearchMode(v => !v); setSearchQuery(""); setSearchResults([]); }} />
 
@@ -227,15 +238,8 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
 
       <div className="relative flex-1 overflow-hidden">
         <div ref={listRef}
-          className="h-full overflow-y-auto py-2 px-2 sm:px-4"
-          style={{
-            overscrollBehavior: "contain",
-            backgroundImage: `
-              radial-gradient(ellipse 80% 60% at 15% 15%, rgba(99,102,241,.10) 0%, transparent 55%),
-              radial-gradient(ellipse 70% 70% at 85% 85%, rgba(139,92,246,.09) 0%, transparent 55%),
-              radial-gradient(ellipse 50% 40% at 50% 50%, rgba(124,111,255,.04) 0%, transparent 70%)
-            `,
-          }}
+          className="msg-list-mask h-full overflow-y-auto py-2 px-2 sm:px-4"
+          style={{ overscrollBehavior: "contain" }}
           onScroll={handleScroll} onClick={handleContainerClick}>
 
           {loading && (
@@ -281,11 +285,12 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
                   onReply={setReplyTo}
                   observerRef={observerRef}
                   onEdit={handleEdit}
-                  resolveUsername={(username) =>
-                    (chat?.partner_username && username === partnerOriginal)
-                      ? chat.partner_username
-                      : username
-                  }
+                  resolveUsername={(username) => {
+                    // In a DM with a renamed partner: any message not from me is theirs
+                    if (chat?.chat_type === "dm" && chat?.partner_has_nickname && username !== user?.username)
+                      return chat.partner_username;
+                    return username;
+                  }}
                 />
               </div>
             );

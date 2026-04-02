@@ -24,8 +24,8 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
 
   return (
     <>
-      <div className="flex-shrink-0 flex items-center gap-2.5 px-4"
-        style={{ height: 58, borderBottom: "1px solid var(--border)", background: "var(--bg-sidebar)" }}>
+      <div className="glass-panel flex-shrink-0 flex items-center gap-2.5 px-4"
+        style={{ height: 58, borderBottom: "1px solid var(--glass-border)" }}>
         <span className="flex-1 font-black tracking-tight select-none"
           style={{
             fontSize: 23,
@@ -168,7 +168,12 @@ export function Avatar({ name = "?", size = 10, online = null, src = null }) {
       )}
       {online !== null && (
         <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 transition-all duration-500"
-          style={{ background: online ? "var(--online)" : "#4b5563", borderColor: "var(--bg-sidebar)", boxShadow: online ? "0 0 6px var(--online)" : "none" }} />
+          style={{ background: online ? "var(--online)" : "#4b5563", borderColor: "var(--bg-sidebar)", boxShadow: online ? "0 0 8px var(--online)" : "none" }}>
+          {online && (
+            <span className="absolute inset-0 rounded-full"
+              style={{ background: "var(--online)", animation: "pulse-ring 2s ease-out infinite" }} />
+          )}
+        </span>
       )}
     </div>
   );

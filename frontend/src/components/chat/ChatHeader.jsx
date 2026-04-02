@@ -74,8 +74,8 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
   };
 
   return (
-    <div className="flex-shrink-0 flex items-center gap-3 px-4"
-      style={{ height: 58, background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}>
+    <div className="glass-panel flex-shrink-0 flex items-center gap-3 px-4"
+      style={{ height: 58, borderBottom: "1px solid var(--glass-border)" }}>
 
       <button onClick={onBack}
         className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
@@ -116,7 +116,12 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
           ) : (
             <p className="text-xs transition-all duration-500 animate-fade-in"
               style={{ color: isOnline ? "var(--online)" : "var(--text-muted)" }}>
-              {isOnline ? "● в сети" : lastSeenText ? `был(а) ${lastSeenText}` : "не в сети"}
+              {isOnline
+                ? <span className="flex items-center gap-1">
+                    <span style={{ display:"inline-block", width:6, height:6, borderRadius:"50%", background:"var(--online)", boxShadow:"0 0 6px var(--online)", animation:"glow 2s ease-in-out infinite" }}/>
+                    в сети
+                  </span>
+                : lastSeenText ? `был(а) ${lastSeenText}` : "не в сети"}
             </p>
           )}
         </div>
