@@ -163,7 +163,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
                 </svg>
               )}
             </button>
-            <input ref={fileRef} type="file" accept="image/*,video/*,audio/*,.pdf" className="hidden" onChange={handleFileChange} />
+            <input ref={fileRef} type="file" accept="*/*" className="hidden" onChange={handleFileChange} />
           </>
         )}
 

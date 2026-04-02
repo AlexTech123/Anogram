@@ -21,20 +21,8 @@ QUOTA_BYTES = 5 * 1024 ** 3          # 5 GiB
 SINGLE_FILE_MAX = 50 * 1024 ** 2     # 50 MiB per file
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
-ALLOWED_MIME_PREFIXES = ("image/", "video/", "audio/")
-ALLOWED_EXTENSIONS = {
-    ".jpg", ".jpeg", ".png", ".gif", ".webp",
-    ".mp4", ".mov", ".webm",
-    ".ogg", ".opus", ".mp3", ".m4a", ".webm",
-    ".pdf",
-}
-
-
 def validate_and_infer_type(filename: str, content_type: str) -> str:
-    """Return message_type: image | video | voice | file. Raises on disallowed."""
-    ext = Path(filename).suffix.lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise ValueError(f"File type not allowed: {ext}")
+    """Return message_type: image | video | voice | file. All file types allowed."""
     if content_type.startswith("image/"):
         return "image"
     if content_type.startswith("video/"):
