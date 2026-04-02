@@ -21,6 +21,7 @@ export default function MessageBubble({
   const { lastReadMessageId } = useWebSocket();
 
   const [showEmoji,   setShowEmoji]   = useState(false);
+  const [emojiPos,    setEmojiPos]    = useState(null);
   const [showContext, setShowContext] = useState(false);
   const [contextPos,  setContextPos]  = useState(null);
   const [editing,     setEditing]     = useState(false);
@@ -104,7 +105,20 @@ export default function MessageBubble({
     if (editing) return;
     if (longPressFired.current) { longPressFired.current = false; return; }
     if (showContext) { setShowContext(false); return; }
-    setShowEmoji(v => !v);
+    if (showEmoji) { setShowEmoji(false); return; }
+    openEmojiPanel();
+  };
+
+  const openEmojiPanel = () => {
+    if (bubbleRef.current) {
+      const rect = bubbleRef.current.getBoundingClientRect();
+      setEmojiPos({
+        bottom: window.innerHeight - rect.top + 4,
+        ...(isMine ? { right: window.innerWidth - rect.right } : { left: rect.left }),
+      });
+    }
+    setShowEmoji(true);
+    setShowContext(false);
   };
 
   const openContextMenu = () => {
@@ -345,44 +359,50 @@ export default function MessageBubble({
             document.body
           )}
 
-          {/* Emoji overlay — floats above bubble, no layout shift */}
-          <div style={{
-            position: "absolute",
-            [isMine ? "right" : "left"]: 0,
-            bottom: "calc(100% + 4px)",
-            display: "flex", alignItems: "center", gap: 2,
-            background: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: 16,
-            padding: "4px 6px",
-            boxShadow: "0 4px 20px rgba(0,0,0,.4)",
-            opacity: showEmoji ? 1 : 0,
-            transform: showEmoji ? "translateY(0) scale(1)" : "translateY(6px) scale(0.9)",
-            pointerEvents: showEmoji ? "auto" : "none",
-            transition: "opacity .18s ease, transform .18s cubic-bezier(.34,1.56,.64,1)",
-            zIndex: 10,
-            whiteSpace: "nowrap",
-          }}>
-            {QUICK_EMOJIS.map((e, i) => (
-              <button key={e} onClick={() => handleReact(e)}
-                className="transition-all hover:scale-125 active:scale-90"
+          {/* Emoji panel via portal — same stacking fix as context menu */}
+          {showEmoji && emojiPos && createPortal(
+            <>
+              {/* Backdrop: stopPropagation prevents tap from opening emoji on the next bubble */}
+              <div
+                style={{ position: "fixed", inset: 0, zIndex: 997 }}
+                onTouchStart={e => { e.stopPropagation(); setShowEmoji(false); }}
+                onMouseDown={e => { e.stopPropagation(); setShowEmoji(false); }}
+              />
+              <div className="animate-pop"
                 style={{
-                  fontSize: 20, lineHeight: 1, padding: "1px 3px",
-                  opacity: showEmoji ? 1 : 0,
-                  transform: showEmoji ? "scale(1)" : "scale(0.5)",
-                  transition: `opacity .15s ease ${i * 25}ms, transform .18s cubic-bezier(.34,1.56,.64,1) ${i * 25}ms`,
+                  position: "fixed",
+                  bottom: emojiPos.bottom,
+                  ...(emojiPos.right !== undefined ? { right: emojiPos.right } : { left: emojiPos.left }),
+                  display: "flex", alignItems: "center", gap: 2,
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: "4px 6px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,.4)",
+                  zIndex: 998,
+                  whiteSpace: "nowrap",
                 }}>
-                {e}
-              </button>
-            ))}
-            {isMine && !editing && (
-              <button onClick={() => { setEditing(true); setShowEmoji(false); }}
-                className="text-xs rounded-xl px-2 py-1 transition-all ml-1"
-                style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
-                ✎
-              </button>
-            )}
-          </div>
+                {QUICK_EMOJIS.map((e, i) => (
+                  <button key={e} onClick={() => handleReact(e)}
+                    className="transition-all hover:scale-125 active:scale-90"
+                    style={{
+                      fontSize: 20, lineHeight: 1, padding: "1px 3px",
+                      animation: `reactionIn .18s cubic-bezier(.34,1.56,.64,1) ${i * 25}ms both`,
+                    }}>
+                    {e}
+                  </button>
+                ))}
+                {isMine && !editing && (
+                  <button onClick={() => { setEditing(true); setShowEmoji(false); }}
+                    className="text-xs rounded-xl px-2 py-1 transition-all ml-1"
+                    style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
+                    ✎
+                  </button>
+                )}
+              </div>
+            </>,
+            document.body
+          )}
 
         </div>{/* end bubble wrapper */}
 

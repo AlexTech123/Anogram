@@ -19,7 +19,8 @@ export const adminLogout = () => sessionStorage.removeItem(KEY);
 
 export const hasAdminToken = () => !!sessionStorage.getItem(KEY);
 
-export const deleteAdminUser = (id) => client.delete(`/users/${id}`);
+export const deleteAdminUser  = (id)  => client.delete(`/users/${id}`);
+export const deleteAdminMedia = (url) => client.delete("/storage", { data: { url } });
 
 export const getAdminStats   = () => client.get("/stats").then(r => r.data);
 export const getAdminUsers   = () => client.get("/users").then(r => r.data);

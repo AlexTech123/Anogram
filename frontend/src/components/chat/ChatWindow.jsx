@@ -149,11 +149,11 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
         {/* Animated floating blobs */}
         <div style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden" }}>
           {[
-            { w:480, h:480, t:"40%", l:"45%", c:"rgba(99,102,241,.13)",  blur:50, anim:"blobDrift",  dur:"18s", delay:"0s"   },
-            { w:380, h:380, t:"30%", l:"30%", c:"rgba(139,92,246,.11)",  blur:55, anim:"blobDrift2", dur:"22s", delay:"2s"   },
-            { w:300, h:300, t:"50%", l:"50%", c:"rgba(59,130,246,.09)",  blur:45, anim:"blobDrift3", dur:"15s", delay:"4s"   },
-            { w:260, h:260, t:"35%", l:"40%", c:"rgba(232,121,249,.08)", blur:50, anim:"blobDrift4", dur:"25s", delay:"1s"   },
-            { w:220, h:220, t:"45%", l:"35%", c:"rgba(124,111,255,.1)",  blur:40, anim:"blobDrift5", dur:"19s", delay:"3s"   },
+            { w:680, h:680, t:"40%", l:"45%", c:"rgba(99,102,241,.13)",  blur:70, anim:"blobDrift",  dur:"18s", delay:"0s"   },
+            { w:560, h:560, t:"30%", l:"30%", c:"rgba(139,92,246,.11)",  blur:75, anim:"blobDrift2", dur:"22s", delay:"2s"   },
+            { w:460, h:460, t:"50%", l:"50%", c:"rgba(59,130,246,.09)",  blur:60, anim:"blobDrift3", dur:"15s", delay:"4s"   },
+            { w:400, h:400, t:"35%", l:"40%", c:"rgba(232,121,249,.08)", blur:65, anim:"blobDrift4", dur:"25s", delay:"1s"   },
+            { w:340, h:340, t:"45%", l:"35%", c:"rgba(124,111,255,.1)",  blur:55, anim:"blobDrift5", dur:"19s", delay:"3s"   },
           ].map((b, i) => (
             <div key={i} style={{
               position:"absolute",

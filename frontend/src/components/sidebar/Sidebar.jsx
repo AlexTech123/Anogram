@@ -35,7 +35,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
             fontStyle: "italic",
-            animation: "gradient-shift 6s ease infinite",
+            animation: "gradient-shift 14s ease infinite",
           }}>
           Anogram
         </span>

@@ -3,25 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --bg-base:        #080b18;
-  --bg-sidebar:     #0b0f1e;
-  --bg-card:        #0f1424;
-  --bg-elevated:    #151c33;
-  --bg-input:       #111726;
-  --bg-hover:       #192039;
-  --bg-active:      #1b1845;
+  --bg-base:        #0d1120;
+  --bg-sidebar:     #101525;
+  --bg-card:        #141928;
+  --bg-elevated:    #1a2238;
+  --bg-input:       #161b2e;
+  --bg-hover:       #1e2840;
+  --bg-active:      #201e4e;
   --msg-out-from:   #5b4cdb;
   --msg-out-to:     #8b5cf6;
-  --msg-in:         #141b32;
+  --msg-in:         #181f38;
   --accent:         #7c6fff;
   --accent-light:   #a78bfa;
   --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   --text-primary:   #eef2ff;
   --text-secondary: #8896b8;
   --text-muted:     #3d4d6e;
-  --border:         #161f38;
+  --border:         #1c2540;
   --online:         #4ade80;
-  --glass-bg:       rgba(8, 11, 24, 0.72);
+  --glass-bg:       rgba(13, 17, 32, 0.75);
   --glass-border:   rgba(124,111,255,.1);
 }
 

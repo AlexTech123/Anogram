@@ -214,6 +214,25 @@ def admin_storage(db: Session = Depends(get_db)):
     return {"files": files, "total_bytes": total_bytes}
 
 
+@router.delete("/storage", dependencies=[Depends(require_admin)], status_code=200)
+def admin_delete_media(body: dict, db: Session = Depends(get_db)):
+    """Delete a specific media file by its relative URL (/api/media/chat_id/filename)."""
+    from app.services.media_service import _delete_media_file
+    url = body.get("url")
+    if not url:
+        raise HTTPException(status_code=400, detail="url required")
+    # Remove message record that references this file
+    msg = db.query(Message).filter(Message.media_url == url).first()
+    if msg:
+        db.delete(msg)
+        db.commit()
+    try:
+        _delete_media_file(url)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"deleted": url}
+
+
 # ── System ────────────────────────────────────────────────────────────────────
 
 @router.get("/system", dependencies=[Depends(require_admin)])

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   adminLogin, adminLogout, hasAdminToken,
   getAdminStats, getAdminUsers, getAdminChats,
-  getAdminStorage, getAdminSystem, deleteAdminUser,
+  getAdminStorage, getAdminSystem, deleteAdminUser, deleteAdminMedia,
 } from "../api/admin";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -310,15 +310,31 @@ function MediaTypeIcon({ url }) {
   return <div className="w-full h-full flex items-center justify-center text-2xl">📄</div>;
 }
 
-function TabStorage({ storage }) {
+function TabStorage({ storage, onDeleted }) {
   const [q, setQ] = useState("");
+  const [confirmUrl, setConfirmUrl] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   if (!storage) return <Spinner />;
   const { files = [], total_bytes = 0 } = storage;
   const filtered = files.filter(f => f.filename.toLowerCase().includes(q.toLowerCase()));
+
+  const handleDelete = async (url) => {
+    if (confirmUrl !== url) { setConfirmUrl(url); return; }
+    setDeleting(true);
+    try {
+      await deleteAdminMedia(url);
+      onDeleted(url);
+      setConfirmUrl(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <input className="input text-sm flex-1 mr-3" placeholder="Поиск по имени файла…" value={q} onChange={e => setQ(e.target.value)} />
+        <input className="input text-sm flex-1 mr-3" placeholder="Поиск по имени файла…" value={q}
+          onChange={e => { setQ(e.target.value); setConfirmUrl(null); }} />
         <span className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
           {files.length} файлов · {fmtBytes(total_bytes)}
         </span>
@@ -326,21 +342,37 @@ function TabStorage({ storage }) {
       {!filtered.length ? <Empty text="Медиафайлы не найдены" /> : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {filtered.map((f, i) => (
-            <a key={i} href={f.url} target="_blank" rel="noreferrer"
-              className="rounded-2xl overflow-hidden block transition-all hover:scale-[1.03] active:scale-95"
-              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", textDecoration: "none" }}>
-              <div className="w-full aspect-square overflow-hidden" style={{ background: "var(--bg-elevated)" }}>
-                <MediaTypeIcon url={f.url} />
+            <div key={i} className="rounded-2xl overflow-hidden"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", position: "relative" }}>
+              <a href={f.url} target="_blank" rel="noreferrer"
+                className="block transition-all hover:opacity-90"
+                style={{ textDecoration: "none" }}>
+                <div className="w-full aspect-square overflow-hidden" style={{ background: "var(--bg-elevated)" }}>
+                  <MediaTypeIcon url={f.url} />
+                </div>
+                <div className="p-2 pb-1">
+                  <p className="text-xs truncate font-medium" style={{ color: "var(--text-primary)" }}>{f.filename}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    {fmtBytes(f.size_bytes)}{f.chat_id && ` · чат #${f.chat_id}`}
+                  </p>
+                  <p style={{ color: "var(--text-muted)", fontSize: 10 }}>{fmtRelative(f.modified_at)}</p>
+                </div>
+              </a>
+              <div className="px-2 pb-2">
+                <button
+                  disabled={deleting && confirmUrl === f.url}
+                  onClick={() => handleDelete(f.url)}
+                  onMouseLeave={() => { if (!deleting) setConfirmUrl(null); }}
+                  className="w-full text-xs py-1 rounded-lg font-medium transition-all"
+                  style={{
+                    background: confirmUrl === f.url ? "rgba(239,68,68,.7)" : "rgba(239,68,68,.08)",
+                    color: confirmUrl === f.url ? "#fff" : "#f87171",
+                    border: "1px solid rgba(239,68,68,.25)",
+                  }}>
+                  {deleting && confirmUrl === f.url ? "…" : confirmUrl === f.url ? "Точно удалить?" : "Удалить"}
+                </button>
               </div>
-              <div className="p-2">
-                <p className="text-xs truncate font-medium" style={{ color: "var(--text-primary)" }}>{f.filename}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                  {fmtBytes(f.size_bytes)}
-                  {f.chat_id && <span> · чат #{f.chat_id}</span>}
-                </p>
-                <p className="text-xs" style={{ color: "var(--text-muted)", fontSize: 10 }}>{fmtRelative(f.modified_at)}</p>
-              </div>
-            </a>
+            </div>
           ))}
         </div>
       )}
@@ -536,7 +568,7 @@ export default function AdminPage() {
           {tab === 0 && <TabOverview stats={stats} />}
           {tab === 1 && <TabUsers users={users} onDeleted={id => setUsers(prev => prev.filter(u => u.id !== id))} />}
           {tab === 2 && <TabChats chats={chats} />}
-          {tab === 3 && <TabStorage storage={storage} />}
+          {tab === 3 && <TabStorage storage={storage} onDeleted={url => setStorage(prev => prev ? { ...prev, files: prev.files.filter(f => f.url !== url) } : prev)} />}
           {tab === 4 && <TabSystem system={system} />}
         </div>
       </div>
