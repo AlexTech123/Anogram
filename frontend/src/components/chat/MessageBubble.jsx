@@ -29,6 +29,7 @@ export default function MessageBubble({
 
   const longPressTimer = useRef(null);
   const longPressFired = useRef(false);
+  const menuOpening    = useRef(false); // true while opening finger is still down
   const touch          = useRef(null);
   const swipeTriggered = useRef(false);
   const bubbleRef  = useRef(null);
@@ -62,6 +63,7 @@ export default function MessageBubble({
     touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     longPressTimer.current = setTimeout(() => {
       longPressFired.current = true;
+      menuOpening.current    = true;  // finger still down
       setShowContext(true);
       setShowEmoji(false);
       navigator.vibrate?.(30);
@@ -93,6 +95,8 @@ export default function MessageBubble({
     setSwipeX(0); setSwiping(false);
     swipeTriggered.current = false;
     touch.current = null;
+    // Finger lifted — next touch on backdrop is allowed to close menu
+    menuOpening.current = false;
   };
 
   const handleBubbleClick = () => {
@@ -159,7 +163,9 @@ export default function MessageBubble({
         className={`flex flex-col ${isMine ? "items-end" : "items-start"} max-w-[75%] sm:max-w-[62%]`}
         style={{
           transform: swipeX ? `translateX(${swipeX}px)` : "translateX(0)",
-          transition: swiping ? "none" : "transform .3s cubic-bezier(.25,.8,.25,1)",
+          transition: swiping
+            ? "none"
+            : "transform .3s cubic-bezier(.25,.8,.25,1), height .2s ease",
           position: "relative",
         }}
       >
@@ -257,12 +263,17 @@ export default function MessageBubble({
             </div>
           </div>
 
-          {/* Backdrop — closes menu on any outside tap, no timing hacks */}
+          {/* Backdrop — closes menu.
+              onTouchStart: only fires for a NEW finger (after menuOpening = false).
+              onMouseDown: fires on desktop click outside.
+              No onClick — avoids synthetic ghost clicks from the long-press gesture. */}
           {showContext && (
             <div
               style={{ position: "fixed", inset: 0, zIndex: 49 }}
-              onClick={() => setShowContext(false)}
-              onContextMenu={e => { e.preventDefault(); setShowContext(false); }}
+              onTouchStart={() => {
+                if (!menuOpening.current) setShowContext(false);
+              }}
+              onMouseDown={() => setShowContext(false)}
             />
           )}
 
@@ -356,20 +367,35 @@ export default function MessageBubble({
 
         </div>{/* end bubble wrapper */}
 
-        {/* Reaction bubbles */}
+        {/* Reaction bubbles — animate in/out smoothly */}
         {message.reactions?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1 px-1"
-            style={{ justifyContent: isMine ? "flex-end" : "flex-start" }}>
-            {message.reactions.map(r => (
-              <button key={r.emoji} onClick={() => handleReact(r.emoji)}
-                className="flex items-center gap-1 text-xs rounded-full px-2 py-0.5 transition-all active:scale-95"
+          <div
+            className="flex flex-wrap gap-1 px-1"
+            style={{
+              justifyContent: isMine ? "flex-end" : "flex-start",
+              marginTop: 3,
+              transition: "height .2s ease",
+            }}
+          >
+            {message.reactions.map((r, i) => (
+              <button
+                key={r.emoji}
+                onClick={() => handleReact(r.emoji)}
+                className="flex items-center gap-1 text-xs rounded-full px-2 py-0.5 active:scale-95"
                 style={{
                   background: r.mine ? "rgba(124,111,255,.25)" : "var(--bg-elevated)",
                   border: r.mine ? "1px solid rgba(124,111,255,.5)" : "1px solid var(--border)",
                   color: "var(--text-primary)",
-                }}>
+                  animation: `reactionIn .2s cubic-bezier(.34,1.56,.64,1) ${i * 30}ms both`,
+                  transition: "background .2s, border-color .2s, transform .15s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >
                 <span>{r.emoji}</span>
-                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{r.count}</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 11, transition: "color .2s" }}>
+                  {r.count}
+                </span>
               </button>
             ))}
           </div>
