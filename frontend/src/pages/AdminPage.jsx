@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   adminLogin, adminLogout, hasAdminToken,
   getAdminStats, getAdminUsers, getAdminChats,
-  getAdminStorage, getAdminSystem,
+  getAdminStorage, getAdminSystem, deleteAdminUser,
 } from "../api/admin";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -151,26 +151,42 @@ function TabOverview({ stats }) {
   );
 }
 
-function TabUsers({ users }) {
+function TabUsers({ users, onDeleted }) {
   const [q, setQ] = useState("");
+  const [confirmId, setConfirmId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
   if (!users) return <Spinner />;
   const filtered = users.filter(u =>
     u.username.includes(q) || (u.display_name || "").toLowerCase().includes(q.toLowerCase())
   );
+
+  const handleDelete = async (id) => {
+    if (confirmId !== id) { setConfirmId(id); return; }
+    setDeleting(true);
+    try {
+      await deleteAdminUser(id);
+      onDeleted(id);
+      setConfirmId(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <input
         className="input text-sm"
         placeholder="Поиск по имени…"
         value={q}
-        onChange={e => setQ(e.target.value)}
+        onChange={e => { setQ(e.target.value); setConfirmId(null); }}
       />
       {!filtered.length ? <Empty text="Пользователи не найдены" /> : (
         <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: "var(--bg-elevated)", color: "var(--text-muted)", fontSize: 11 }}>
-                {["Пользователь", "Сообщений", "Чатов", "Регистрация", "Последний визит", "Статус"].map(h => (
+                {["Пользователь", "Сообщений", "Чатов", "Регистрация", "Последний визит", "Статус", ""].map(h => (
                   <th key={h} className="px-4 py-2.5 text-left font-semibold">{h}</th>
                 ))}
               </tr>
@@ -199,6 +215,20 @@ function TabUsers({ users }) {
                       style={{ background: u.is_active ? "rgba(74,222,128,.15)" : "rgba(248,113,113,.15)", color: u.is_active ? "#4ade80" : "#f87171" }}>
                       {u.is_active ? "активен" : "заблок."}
                     </span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <button
+                      disabled={deleting && confirmId === u.id}
+                      onClick={() => handleDelete(u.id)}
+                      className="text-xs px-2.5 py-1 rounded-lg font-medium transition-all"
+                      style={{
+                        background: confirmId === u.id ? "rgba(239,68,68,.7)" : "rgba(239,68,68,.1)",
+                        color: confirmId === u.id ? "#fff" : "#f87171",
+                        border: "1px solid rgba(239,68,68,.3)",
+                      }}
+                      onMouseLeave={() => { if (!deleting) setConfirmId(null); }}>
+                      {deleting && confirmId === u.id ? "…" : confirmId === u.id ? "Точно?" : "Удалить"}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -504,7 +534,7 @@ export default function AdminPage() {
         {/* Tab content */}
         <div className="pb-8">
           {tab === 0 && <TabOverview stats={stats} />}
-          {tab === 1 && <TabUsers users={users} />}
+          {tab === 1 && <TabUsers users={users} onDeleted={id => setUsers(prev => prev.filter(u => u.id !== id))} />}
           {tab === 2 && <TabChats chats={chats} />}
           {tab === 3 && <TabStorage storage={storage} />}
           {tab === 4 && <TabSystem system={system} />}

@@ -124,6 +124,33 @@ def admin_users(db: Session = Depends(get_db)):
     return result
 
 
+@router.delete("/users/{user_id}", dependencies=[Depends(require_admin)], status_code=204)
+def admin_delete_user(user_id: int, db: Session = Depends(get_db)):
+    from app.services.media_service import _delete_media_file
+    from app.models.chat import Chat as ChatModel
+
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 1. Delete all messages by this user (hard delete — sender_id is SET NULL by FK,
+    #    so we must do this explicitly to actually remove them from DB)
+    all_msgs = db.query(Message).filter(Message.sender_id == user_id).all()
+    for m in all_msgs:
+        # Unpin from chat if pinned
+        if m.media_url:
+            try:
+                _delete_media_file(m.media_url)
+            except Exception:
+                pass
+        db.delete(m)
+    db.flush()  # apply message deletes before deleting user
+
+    # 2. Delete the user (ChatMember, ContactNickname, PushSubscription cascade via FK)
+    db.delete(user)
+    db.commit()
+
+
 # ── Chats ─────────────────────────────────────────────────────────────────────
 
 @router.get("/chats", dependencies=[Depends(require_admin)])
