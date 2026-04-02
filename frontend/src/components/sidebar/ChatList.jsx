@@ -30,8 +30,10 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser, o
       {chats.map((chat, i) => {
         const isActive = chat.id === activeChatId;
         const name = chat.chat_type === "dm"
-          ? (chat.partner_username ? `@${chat.partner_username}` : "Личное сообщение")
-          : (chat.name || "Group");
+          ? (chat.partner_username
+              ? (chat.partner_has_nickname ? chat.partner_username : `@${chat.partner_username}`)
+              : "Личное сообщение")
+          : (chat.name || "Группа");
         const preview = chat.last_message?.content || "";
         // Don't zero out when active — let ChatPage state manage this
         const unread = chat.unread_count || 0;

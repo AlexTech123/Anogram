@@ -50,10 +50,10 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
     const name = nameInput.trim();
     if (name && name !== originalUsername) {
       await apiSetNickname(other.user_id, name);
-      onRename?.(name);
+      onRename?.(name, true);   // isNickname = true
     } else {
       await apiDeleteNickname(other.user_id);
-      onRename?.(originalUsername);
+      onRename?.(originalUsername, false);  // isNickname = false → show @
     }
     setRenaming(false);
     setShowMenu(false);
@@ -62,7 +62,7 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
   const clearNickname = async () => {
     if (!other) return;
     await apiDeleteNickname(other.user_id);
-    onRename?.(originalUsername);
+    onRename?.(originalUsername, false);
     setShowMenu(false);
   };
 
@@ -97,7 +97,7 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
           {isRenamed && (
             <span className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
               style={{ background: "rgba(124,111,255,.15)", color: "var(--accent-light)", fontSize: 10 }}>
-              renamed
+              переименован
             </span>
           )}
         </div>
@@ -190,7 +190,7 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
                         <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current flex-shrink-0">
                           <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                         </svg>
-                        Reset to @{originalUsername}
+                        Сбросить (@{originalUsername})
                       </button>
                     )}
                   </>

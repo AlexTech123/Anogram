@@ -34,6 +34,7 @@ class ChatOut(BaseModel):
     partner_username: str | None = None
     partner_user_id: int | None = None
     partner_avatar: str | None = None
+    partner_has_nickname: bool = False   # true when partner_username is a custom nickname
     unread_count: int = 0
     model_config = {"from_attributes": True}
 

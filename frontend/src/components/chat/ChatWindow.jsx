@@ -132,25 +132,56 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
 
   if (!chat) {
     return (
-      <div className="hidden sm:flex flex-1 flex-col items-center justify-center gap-5" style={{ background: "var(--bg-base)" }}>
-        <div className="relative" style={{ animation: "float 3s ease-in-out infinite" }}>
-          <div className="absolute inset-0 rounded-3xl pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(124,111,255,.25) 0%, transparent 70%)", filter: "blur(28px)", transform: "scale(1.8)" }} />
-          <div className="w-24 h-24 rounded-3xl flex items-center justify-center relative"
+      <div className="hidden sm:flex flex-1 flex-col items-center justify-center gap-6 relative overflow-hidden"
+        style={{ background: "var(--bg-base)" }}>
+
+        {/* Animated floating blobs */}
+        <div style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden" }}>
+          {[
+            { w:500, h:500, t:"8%",  l:"10%", c:"rgba(99,102,241,.12)",  blur:45, anim:"blobDrift",  dur:"14s", delay:"0s"  },
+            { w:420, h:420, b:"12%", r:"8%",  c:"rgba(139,92,246,.10)", blur:55, anim:"blobDrift2", dur:"17s", delay:"2s"  },
+            { w:320, h:320, t:"45%", r:"30%", c:"rgba(59,130,246,.08)",  blur:40, anim:"blobDrift3", dur:"10s", delay:"4s"  },
+            { w:280, h:280, b:"25%", l:"20%", c:"rgba(232,121,249,.07)", blur:45, anim:"blobDrift",  dur:"20s", delay:"7s"  },
+            { w:200, h:200, t:"20%", r:"15%", c:"rgba(124,111,255,.09)", blur:35, anim:"blobDrift2", dur:"12s", delay:"3s"  },
+          ].map((b, i) => (
+            <div key={i} style={{
+              position:"absolute",
+              width: b.w, height: b.h, borderRadius:"50%",
+              background: `radial-gradient(circle, ${b.c} 0%, transparent 65%)`,
+              top: b.t, bottom: b.b, left: b.l, right: b.r,
+              filter: `blur(${b.blur}px)`,
+              animation: `${b.anim} ${b.dur} ease-in-out infinite`,
+              animationDelay: b.delay,
+            }}/>
+          ))}
+        </div>
+
+        {/* Icon floating */}
+        <div className="relative" style={{ animation:"float 4s ease-in-out infinite", zIndex:1 }}>
+          <div style={{
+            position:"absolute", inset:0, borderRadius:24, pointerEvents:"none",
+            background:"radial-gradient(circle, rgba(124,111,255,.35) 0%, transparent 70%)",
+            filter:"blur(18px)", transform:"scale(2.2)",
+          }}/>
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center relative"
             style={{
-              background: "linear-gradient(135deg, var(--bg-elevated), var(--bg-card))",
-              border: "1px solid rgba(124,111,255,.2)",
-              boxShadow: "0 8px 32px rgba(99,102,241,.15)",
+              background:"linear-gradient(135deg, rgba(99,102,241,.22), rgba(139,92,246,.16))",
+              border:"1px solid rgba(124,111,255,.28)",
+              backdropFilter:"blur(12px)",
+              boxShadow:"0 8px 32px rgba(99,102,241,.22)",
             }}>
-            <svg viewBox="0 0 24 24" className="w-11 h-11 fill-current" style={{ color: "var(--accent)", opacity: .75 }}>
+            <svg viewBox="0 0 24 24" className="w-10 h-10 fill-current" style={{ color:"var(--accent)", opacity:.85 }}>
               <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
             </svg>
           </div>
         </div>
-        <div className="text-center">
-          <p className="font-semibold text-base" style={{ color: "var(--text-secondary)" }}>Your chats are here</p>
-          <p className="text-sm mt-1.5 max-w-xs" style={{ color: "var(--text-muted)", lineHeight: 1.5 }}>
-            Select a conversation from the list<br/>or press <span className="font-bold" style={{ color: "var(--accent-light)" }}>+</span> to start a new one
+
+        <div className="text-center relative" style={{ zIndex:1 }}>
+          <p className="font-semibold text-base" style={{ color:"var(--text-secondary)" }}>Ваши чаты здесь</p>
+          <p className="text-sm mt-2 max-w-xs" style={{ color:"var(--text-muted)", lineHeight:1.6 }}>
+            Выберите переписку из списка<br/>или нажмите{" "}
+            <span className="font-bold" style={{ color:"var(--accent-light)" }}>+</span>
+            {" "}чтобы начать новую
           </p>
         </div>
       </div>

@@ -138,12 +138,13 @@ export default function ChatPage() {
             onChatDeleted={handleChatDeleted}
             onMessagesRead={handleMessagesRead}
             onUnreadIncrement={handleUnreadIncrement}
-            onRename={(newName) => {
+            onRename={(newName, isNickname) => {
               setChats(prev => prev.map(c =>
-                c.id === activeChatId ? { ...c, partner_username: newName.replace(/^@/, "") } : c
+                c.id === activeChatId
+                  ? { ...c, partner_username: newName.replace(/^@/, ""), partner_has_nickname: !!isNickname }
+                  : c
               ));
               setActiveChat(prev => prev ? { ...prev, name: newName, partner_username: newName } : prev);
-              // Reload full list so server-side nickname applies everywhere
               loadChats();
             }}
           />

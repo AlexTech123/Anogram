@@ -269,10 +269,14 @@ export default function MessageBubble({
           {showContext && createPortal(
             <div
               style={{ position: "fixed", inset: 0, zIndex: 999 }}
-              onTouchStart={() => {
+              onTouchStart={(e) => {
+                e.stopPropagation(); // stop bubbling to message row → prevents new long-press timer
                 if (!menuOpening.current) setShowContext(false);
               }}
-              onMouseDown={() => setShowContext(false)}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                setShowContext(false);
+              }}
             />,
             document.body
           )}
