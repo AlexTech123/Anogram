@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/layout/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ChatPage from "./pages/ChatPage";
+import AdminPage from "./pages/AdminPage";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </GlobalWSProvider>

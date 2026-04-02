@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useWebSocket } from "../../context/WebSocketContext";
 import { useGlobalWS } from "../../context/GlobalWSContext";
@@ -12,12 +13,14 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
   const { typingUsers } = useWebSocket();
   const { onlineIds } = useGlobalWS();
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [lastSeenText, setLastSeenText] = useState(null);
   const inputRef = useRef(null);
+  const menuBtnRef = useRef(null);
 
   const other = chat?.members?.find(m => m.user_id !== user?.id);
 
@@ -141,7 +144,13 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
 
       <div className="relative flex-shrink-0">
         <button
-          onClick={() => { setShowMenu(v => !v); setConfirmDelete(false); setRenaming(false); }}
+          ref={menuBtnRef}
+          onClick={() => {
+            if (showMenu) { setShowMenu(false); return; }
+            const r = menuBtnRef.current?.getBoundingClientRect();
+            if (r) setMenuPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+            setShowMenu(true); setConfirmDelete(false); setRenaming(false);
+          }}
           className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
           style={{ color: "var(--text-secondary)" }}
           onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-elevated)"; e.currentTarget.style.color = "var(--text-primary)"; }}
@@ -151,10 +160,12 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
           </svg>
         </button>
 
-        {showMenu && (
-          <div className="absolute right-0 top-full mt-2 rounded-2xl shadow-2xl z-50 animate-pop overflow-hidden"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--bg-elevated)", minWidth: 210 }}
-            onMouseLeave={() => { if (!renaming) { setShowMenu(false); setConfirmDelete(false); } }}>
+        {showMenu && menuPos && createPortal(
+          <>
+            <div style={{ position: "fixed", inset: 0, zIndex: 999 }}
+              onMouseDown={() => { if (!renaming) { setShowMenu(false); setConfirmDelete(false); } }} />
+            <div className="rounded-2xl shadow-2xl animate-pop overflow-hidden"
+              style={{ position: "fixed", top: menuPos.top, right: menuPos.right, background: "var(--bg-card)", border: "1px solid var(--bg-elevated)", minWidth: 210, zIndex: 1000 }}>
 
             {other && (
               <div style={{ borderBottom: "1px solid var(--bg-elevated)" }}>
@@ -215,7 +226,9 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
                 {deleting ? "Удаление…" : confirmDelete ? "Подтвердить" : "Удалить чат"}
               </button>
             </div>
-          </div>
+            </div>
+          </>,
+          document.body
         )}
       </div>
     </div>

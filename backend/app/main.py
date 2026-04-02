@@ -3,7 +3,7 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import auth, avatars, chats, media, messages, nicknames, users
+from app.routers import admin, auth, avatars, chats, media, messages, nicknames, users
 from app.websocket.chat_ws import chat_websocket
 from app.websocket.global_ws import global_websocket
 from app.tasks.cleanup import cleanup_inactive_users
@@ -18,6 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(admin.router,     prefix="/api")
 app.include_router(auth.router,      prefix="/api")
 app.include_router(users.router,     prefix="/api")
 app.include_router(chats.router,     prefix="/api")

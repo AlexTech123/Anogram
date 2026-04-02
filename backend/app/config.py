@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost", "http://localhost:5173"]
     VAPID_PRIVATE_KEY: str = ""
     VAPID_PUBLIC_KEY: str = ""
+    ADMIN_PASSWORD: str = ""
 
     class Config:
         env_file = ".env"
