@@ -17,7 +17,7 @@ export default function RegisterForm() {
       await register(form);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.detail || "Registration failed");
+      setError(err.response?.data?.detail || "Ошибка регистрации");
     } finally {
       setLoading(false);
     }
@@ -26,8 +26,8 @@ export default function RegisterForm() {
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <div className="mb-1">
-        <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Create account</h2>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Choose your @handle to get started</p>
+        <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Создать аккаунт</h2>
+        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Присоединяйтесь к Anogram</p>
       </div>
 
       {error && (
@@ -42,29 +42,29 @@ export default function RegisterForm() {
           <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-sm select-none pointer-events-none"
             style={{ color: "var(--accent)" }}>@</span>
           <input className="input" style={{ paddingLeft: "1.75rem" }}
-            placeholder="username"
+            placeholder="никнейм"
             value={form.username}
             onChange={e => setForm({ ...form, username: e.target.value })}
             required autoFocus autoCapitalize="none" autoComplete="username" />
         </div>
         <p className="text-xs mt-2 pl-1" style={{ color: "var(--text-muted)" }}>
-          Your unique handle — how others find and message you
+          Уникальный никнейм — по нему вас найдут другие
         </p>
       </div>
 
-      <input className="input" type="password" placeholder="Password"
+      <input className="input" type="password" placeholder="Пароль"
         value={form.password}
         onChange={e => setForm({ ...form, password: e.target.value })}
         required autoComplete="new-password" />
 
       <button className="btn-primary" disabled={loading}>
-        {loading ? <Spinner text="Creating…" /> : "Create Account"}
+        {loading ? <Spinner text="Создаём…" /> : "Создать аккаунт"}
       </button>
 
       <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
-        Already have an account?{" "}
+        Уже есть аккаунт?{" "}
         <Link to="/login" className="font-semibold hover:underline" style={{ color: "var(--accent-light)" }}>
-          Sign in
+          Войти
         </Link>
       </p>
     </form>

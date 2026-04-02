@@ -19,8 +19,8 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser, o
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
           </svg>
         </div>
-        <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>No messages yet</p>
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>Tap + to start a conversation</p>
+        <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Нет сообщений</p>
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>Нажмите + чтобы начать переписку</p>
       </div>
     );
   }
@@ -30,7 +30,7 @@ export default function ChatList({ chats, activeChatId, onSelect, currentUser, o
       {chats.map((chat, i) => {
         const isActive = chat.id === activeChatId;
         const name = chat.chat_type === "dm"
-          ? (chat.partner_username ? `@${chat.partner_username}` : "Direct Message")
+          ? (chat.partner_username ? `@${chat.partner_username}` : "Личное сообщение")
           : (chat.name || "Group");
         const preview = chat.last_message?.content || "";
         // Don't zero out when active — let ChatPage state manage this

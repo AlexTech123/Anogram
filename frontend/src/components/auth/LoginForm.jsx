@@ -17,7 +17,7 @@ export default function LoginForm() {
       await login(form.username, form.password);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.detail || "Incorrect username or password");
+      setError(err.response?.data?.detail || "Неверный логин или пароль");
     } finally {
       setLoading(false);
     }
@@ -25,9 +25,9 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <div className="mb-1">
-        <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Welcome back</h2>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Sign in to continue</p>
+      <div className="mb-2">
+        <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>С возвращением</h2>
+        <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>Войдите, чтобы продолжить</p>
       </div>
 
       {error && (
@@ -41,25 +41,25 @@ export default function LoginForm() {
         <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-sm select-none pointer-events-none"
           style={{ color: "var(--accent)" }}>@</span>
         <input className="input" style={{ paddingLeft: "1.75rem" }}
-          placeholder="username"
+          placeholder="никнейм"
           value={form.username}
           onChange={e => setForm({ ...form, username: e.target.value })}
           required autoFocus autoCapitalize="none" autoComplete="username" />
       </div>
 
-      <input className="input" type="password" placeholder="Password"
+      <input className="input" type="password" placeholder="Пароль"
         value={form.password}
         onChange={e => setForm({ ...form, password: e.target.value })}
         required autoComplete="current-password" />
 
       <button className="btn-primary" disabled={loading}>
-        {loading ? <Spinner text="Signing in…" /> : "Sign In"}
+        {loading ? <Spinner text="Входим…" /> : "Войти"}
       </button>
 
       <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
-        No account?{" "}
+        Нет аккаунта?{" "}
         <Link to="/register" className="font-semibold hover:underline" style={{ color: "var(--accent-light)" }}>
-          Register
+          Зарегистрироваться
         </Link>
       </p>
     </form>

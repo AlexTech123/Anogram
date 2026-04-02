@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useWebSocket } from "../../context/WebSocketContext";
 import { deleteMessage, reactToMessage, editMessage } from "../../api/messages";
@@ -219,7 +220,7 @@ export default function MessageBubble({
                   @{rn(message.reply_to.sender_username)}
                 </p>
                 <p className="truncate" style={{ color: isMine ? "rgba(255,255,255,.55)" : "var(--text-muted)" }}>
-                  {message.reply_to.content || "Message deleted"}
+                  {message.reply_to.content || "Сообщение удалено"}
                 </p>
               </div>
             )}
@@ -240,7 +241,7 @@ export default function MessageBubble({
                   rows={1} />
                 <button onClick={handleEditSubmit}
                   className="text-xs px-2 py-1 rounded-lg flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,.2)", color: "#fff" }}>Save</button>
+                  style={{ background: "rgba(255,255,255,.2)", color: "#fff" }}>Сохранить</button>
               </div>
             ) : (
               message.content && (
@@ -253,7 +254,7 @@ export default function MessageBubble({
 
             <div className="flex items-center justify-end gap-1.5" style={{ marginTop: 4 }}>
               {message.edited_at && (
-                <span style={{ color: isMine ? "rgba(255,255,255,.35)" : "var(--text-muted)", fontSize: 9 }}>edited</span>
+                <span style={{ color: isMine ? "rgba(255,255,255,.35)" : "var(--text-muted)", fontSize: 9 }}>изм.</span>
               )}
               <span className="text-xs select-none"
                 style={{ color: isMine ? "rgba(255,255,255,.5)" : "var(--text-muted)", lineHeight: 1 }}>
@@ -263,21 +264,20 @@ export default function MessageBubble({
             </div>
           </div>
 
-          {/* Backdrop — closes menu.
-              onTouchStart: only fires for a NEW finger (after menuOpening = false).
-              onMouseDown: fires on desktop click outside.
-              No onClick — avoids synthetic ghost clicks from the long-press gesture. */}
-          {showContext && (
+          {/* Backdrop via portal — rendered at document.body so z-index is
+              guaranteed above all message bubbles regardless of stacking context */}
+          {showContext && createPortal(
             <div
-              style={{ position: "fixed", inset: 0, zIndex: 49 }}
+              style={{ position: "fixed", inset: 0, zIndex: 999 }}
               onTouchStart={() => {
                 if (!menuOpening.current) setShowContext(false);
               }}
               onMouseDown={() => setShowContext(false)}
-            />
+            />,
+            document.body
           )}
 
-          {/* Context menu */}
+          {/* Context menu sits above the portal backdrop */}
           {showContext && (
             <div ref={contextRef}
               className="absolute animate-pop rounded-2xl overflow-hidden shadow-2xl"
@@ -287,7 +287,7 @@ export default function MessageBubble({
                 background: "var(--bg-card)",
                 border: "1px solid var(--border)",
                 minWidth: 160,
-                zIndex: 50,
+                zIndex: 1000,
               }}>
               <button onClick={handleReply}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors"
@@ -297,7 +297,7 @@ export default function MessageBubble({
                 <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                   <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
                 </svg>
-                Reply
+                Ответить
               </button>
               {isMine && (
                 <button onClick={() => { setEditing(true); setShowContext(false); }}
@@ -308,7 +308,7 @@ export default function MessageBubble({
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                   </svg>
-                  Edit
+                  Изменить
                 </button>
               )}
               {isMine && (
@@ -320,7 +320,7 @@ export default function MessageBubble({
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                   </svg>
-                  {deleting ? "Deleting…" : "Delete"}
+                  {deleting ? "Удаление…" : "Удалить"}
                 </button>
               )}
             </div>

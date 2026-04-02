@@ -37,7 +37,7 @@ services:
       dockerfile: nginx/Dockerfile
     restart: unless-stopped
     ports:
-      - "230:80"
+      - "80:80"
     depends_on:
       - backend
 

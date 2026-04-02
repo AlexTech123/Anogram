@@ -21,17 +21,17 @@ def _last_seen_text(last_seen: datetime | None) -> str | None:
     now = datetime.now(timezone.utc)
     diff = now - last_seen.replace(tzinfo=timezone.utc) if last_seen.tzinfo is None else now - last_seen
     if diff.total_seconds() < 60:
-        return "just now"
+        return "только что"
     if diff.total_seconds() < 3600:
         m = int(diff.total_seconds() // 60)
-        return f"{m} minute{'s' if m > 1 else ''} ago"
+        return f"{m} мин. назад"
     if diff.days == 0:
         h = int(diff.total_seconds() // 3600)
-        return f"{h} hour{'s' if h > 1 else ''} ago"
+        return f"{h} ч. назад"
     if diff.days == 1:
-        return "yesterday"
+        return "вчера"
     if diff.days < 7:
-        return f"{diff.days} days ago"
+        return f"{diff.days} дн. назад"
     return last_seen.strftime("%-d %b %Y")
 
 

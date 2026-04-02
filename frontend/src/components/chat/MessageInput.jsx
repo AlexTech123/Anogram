@@ -117,7 +117,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
   return (
     <div className="flex-shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <ReplyBar replyTo={replyTo} onCancel={onCancelReply} />
-      <div className="flex items-end gap-2 px-3 py-2.5"
+      <div className="flex items-center gap-2 px-3 py-2.5"
         style={{ background: "var(--bg-sidebar)", borderTop: replyTo ? "none" : "1px solid var(--border)" }}>
 
         {/* Attach */}
@@ -126,7 +126,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
             <button
               onClick={() => !uploading && fileRef.current?.click()}
               disabled={uploading}
-              title="Attach file"
+              title="Прикрепить файл"
               className="flex-shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center transition-all active:scale-90 relative overflow-hidden"
               style={{ background: "var(--bg-elevated)", color: uploading ? "var(--accent-light)" : "var(--text-secondary)" }}
               onMouseEnter={e => { if (!uploading) e.currentTarget.style.color = "var(--accent-light)"; }}
@@ -171,7 +171,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
               onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}>
-              Cancel
+              Отмена
             </button>
           </div>
         ) : (
@@ -185,7 +185,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
               ref={textRef}
               className="flex-1 bg-transparent text-sm resize-none outline-none leading-relaxed"
               style={{ color: "var(--text-primary)", minHeight: 22, maxHeight: 120 }}
-              placeholder="Message…"
+              placeholder="Сообщение…"
               rows={1}
               value={text}
               onInput={onInput}
@@ -213,7 +213,7 @@ export default function MessageInput({ replyTo, onCancelReply, chatId, onMediaSe
             </svg>
           </button>
         ) : canRecord ? (
-          <button onClick={startRecording} disabled={uploading} title="Voice message"
+          <button onClick={startRecording} disabled={uploading} title="Голосовое сообщение"
             className="flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90"
             style={{ background: "var(--bg-elevated)", color: "var(--text-muted)", opacity: uploading ? .4 : 1 }}
             onMouseEnter={e => { e.currentTarget.style.color = "var(--accent-light)"; e.currentTarget.style.background = "var(--bg-hover)"; }}

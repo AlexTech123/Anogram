@@ -62,7 +62,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
             <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current flex-shrink-0">
               <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
             </svg>
-            All chats
+            Все чаты
           </button>
         )}
 
@@ -78,7 +78,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                 {user?.display_name || `@${user?.username}`}
               </p>
               <p className="text-xs" style={{ color: iAmOnline ? "var(--online)" : "var(--text-muted)" }}>
-                {iAmOnline ? "online" : "offline"}
+                {iAmOnline ? "в сети" : "не в сети"}
               </p>
             </div>
             <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0 fill-current transition-transform duration-200"
@@ -110,7 +110,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                     <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
                   </svg>
-                  Edit profile
+                  Редактировать профиль
                 </button>
                 <button onClick={logout}
                   className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 rounded-xl transition-all"
@@ -120,7 +120,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                     <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                   </svg>
-                  Log out
+                  Выйти
                 </button>
                 <button onClick={handleDeleteAccount} disabled={deleting}
                   className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 rounded-xl transition-all mt-0.5"
@@ -130,7 +130,7 @@ export default function Sidebar({ chats, activeChatId, onSelectChat, onChatCreat
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                   </svg>
-                  {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete account"}
+                  {deleting ? "Удаление…" : confirmDelete ? "Подтвердить удаление" : "Удалить аккаунт"}
                 </button>
               </div>
             </div>

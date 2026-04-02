@@ -70,7 +70,7 @@ export default function ProfileModal({ onClose }) {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Edit Profile</h3>
+          <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Редактировать профиль</h3>
           <button onClick={onClose}
             className="w-8 h-8 rounded-2xl flex items-center justify-center transition-all active:scale-90"
             style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>✕</button>
@@ -100,13 +100,13 @@ export default function ProfileModal({ onClose }) {
             <button onClick={() => fileRef.current?.click()}
               className="text-xs px-3 py-1.5 rounded-xl transition-all"
               style={{ background: "var(--accent-gradient)", color: "#fff" }}>
-              Change photo
+              Изменить фото
             </button>
             {user?.avatar_url && (
               <button onClick={handleDeleteAvatar}
                 className="text-xs px-3 py-1.5 rounded-xl transition-all"
                 style={{ background: "rgba(239,68,68,.15)", color: "#f87171" }}>
-                Remove
+                Удалить
               </button>
             )}
           </div>
@@ -116,21 +116,21 @@ export default function ProfileModal({ onClose }) {
         <div className="flex flex-col gap-3">
           <div>
             <label className="text-xs font-medium pl-1 mb-1 block" style={{ color: "var(--text-secondary)" }}>
-              Display name
+              Отображаемое имя
             </label>
             <input className="input" placeholder={`@${user?.username}`}
               value={form.display_name}
               onChange={e => setForm({ ...form, display_name: e.target.value })}
               maxLength={100} />
             <p className="text-xs mt-1 pl-1" style={{ color: "var(--text-muted)" }}>
-              Shown instead of @username in chats
+              Отображается вместо @никнейма в чатах
             </p>
           </div>
           <div>
             <label className="text-xs font-medium pl-1 mb-1 block" style={{ color: "var(--text-secondary)" }}>
-              Bio
+              О себе
             </label>
-            <textarea className="input resize-none" rows={3} placeholder="Tell something about yourself…"
+            <textarea className="input resize-none" rows={3} placeholder="Расскажите о себе…"
               value={form.bio}
               onChange={e => setForm({ ...form, bio: e.target.value })}
               maxLength={300} />
@@ -138,7 +138,7 @@ export default function ProfileModal({ onClose }) {
         </div>
 
         <button onClick={save} disabled={saving} className="btn-primary">
-          {saved ? "✓ Saved" : saving ? "Saving…" : "Save changes"}
+          {saved ? "✓ Сохранено" : saving ? "Сохранение…" : "Сохранить изменения"}
         </button>
       </div>
     </div>

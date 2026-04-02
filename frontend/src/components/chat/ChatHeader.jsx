@@ -35,7 +35,7 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
   // Show @ only when displaying original username, not a custom nickname
   const displayName = isRenamed
     ? chat.partner_username
-    : (originalUsername ? `@${originalUsername}` : (chat.name || "Direct Message"));
+    : (originalUsername ? `@${originalUsername}` : (chat.name || "Личное сообщение"));
   const isOnline = other ? (onlineIds?.has(other.user_id) ?? false) : false;
   const typingList = Object.values(typingUsers);
 
@@ -101,22 +101,25 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
             </span>
           )}
         </div>
-        {typingList.length > 0 ? (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs" style={{ color: "var(--accent-light)" }}>typing</span>
-            {[0,1,2].map(i => (
-              <span key={i} className="w-1 h-1 rounded-full inline-block" style={{
-                background: "var(--accent-light)",
-                animation: `bounce-dot .9s ease ${i*.18}s infinite`,
-              }}/>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs transition-colors duration-500"
-            style={{ color: isOnline ? "var(--online)" : "var(--text-muted)" }}>
-            {isOnline ? "online" : lastSeenText ? `last seen ${lastSeenText}` : "offline"}
-          </p>
-        )}
+        <div style={{ height: 16, overflow: "hidden" }}>
+          {typingList.length > 0 ? (
+            <div className="flex items-center gap-1.5 animate-fade-in">
+              {[0,1,2].map(i => (
+                <span key={i} className="rounded-full inline-block" style={{
+                  width: 4, height: 4,
+                  background: "var(--accent-light)",
+                  animation: `bounce-dot .9s ease ${i*.18}s infinite`,
+                }}/>
+              ))}
+              <span className="text-xs" style={{ color: "var(--accent-light)" }}>печатает…</span>
+            </div>
+          ) : (
+            <p className="text-xs transition-all duration-500 animate-fade-in"
+              style={{ color: isOnline ? "var(--online)" : "var(--text-muted)" }}>
+              {isOnline ? "● в сети" : lastSeenText ? `был(а) ${lastSeenText}` : "не в сети"}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Search toggle */}
@@ -163,7 +166,7 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
                     <button onClick={commitRename}
                       className="text-xs px-2.5 py-1.5 rounded-lg font-semibold flex-shrink-0"
                       style={{ background: "var(--accent)", color: "#fff" }}>
-                      Save
+                      Сохранить
                     </button>
                   </div>
                 ) : (
@@ -176,7 +179,7 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
                       <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                         <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                       </svg>
-                      Rename contact
+                      Переименовать контакт
                     </button>
                     {isRenamed && (
                       <button onClick={clearNickname}
@@ -204,7 +207,7 @@ export default function ChatHeader({ chat, onBack, onChatDeleted, onRename, onSe
                 <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
                   <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                 </svg>
-                {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete chat"}
+                {deleting ? "Удаление…" : confirmDelete ? "Подтвердить" : "Удалить чат"}
               </button>
             </div>
           </div>

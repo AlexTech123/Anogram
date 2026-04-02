@@ -10,8 +10,8 @@ import { searchMessages as apiSearch } from "../../api/messages";
 function formatDateLabel(iso) {
   const d = new Date(iso), now = new Date();
   const diff = Math.floor((now - d) / 86400000);
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
+  if (diff === 0) return "Сегодня";
+  if (diff === 1) return "Вчера";
   if (diff < 7) return d.toLocaleDateString([], { weekday: "long" });
   return d.toLocaleDateString([], { day: "numeric", month: "long", year: diff > 365 ? "numeric" : undefined });
 }
@@ -133,20 +133,24 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
   if (!chat) {
     return (
       <div className="hidden sm:flex flex-1 flex-col items-center justify-center gap-5" style={{ background: "var(--bg-base)" }}>
-        <div className="relative">
+        <div className="relative" style={{ animation: "float 3s ease-in-out infinite" }}>
           <div className="absolute inset-0 rounded-3xl pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(124,111,255,.2) 0%, transparent 70%)", filter: "blur(24px)", transform: "scale(1.6)" }} />
+            style={{ background: "radial-gradient(circle, rgba(124,111,255,.25) 0%, transparent 70%)", filter: "blur(28px)", transform: "scale(1.8)" }} />
           <div className="w-24 h-24 rounded-3xl flex items-center justify-center relative"
-            style={{ background: "var(--bg-sidebar)", border: "1px solid var(--border)" }}>
-            <svg viewBox="0 0 24 24" className="w-12 h-12 fill-current" style={{ color: "var(--accent)", opacity: .6 }}>
+            style={{
+              background: "linear-gradient(135deg, var(--bg-elevated), var(--bg-card))",
+              border: "1px solid rgba(124,111,255,.2)",
+              boxShadow: "0 8px 32px rgba(99,102,241,.15)",
+            }}>
+            <svg viewBox="0 0 24 24" className="w-11 h-11 fill-current" style={{ color: "var(--accent)", opacity: .75 }}>
               <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
             </svg>
           </div>
         </div>
         <div className="text-center">
-          <p className="font-semibold" style={{ color: "var(--text-secondary)" }}>Select a chat</p>
-          <p className="text-sm mt-1.5" style={{ color: "var(--text-muted)" }}>
-            Choose from the list or press <span className="font-bold" style={{ color: "var(--accent-light)" }}>+</span> to start a new one
+          <p className="font-semibold text-base" style={{ color: "var(--text-secondary)" }}>Your chats are here</p>
+          <p className="text-sm mt-1.5 max-w-xs" style={{ color: "var(--text-muted)", lineHeight: 1.5 }}>
+            Select a conversation from the list<br/>or press <span className="font-bold" style={{ color: "var(--accent-light)" }}>+</span> to start a new one
           </p>
         </div>
       </div>
@@ -166,13 +170,13 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
           style={{ background: "var(--bg-sidebar)", borderBottom: "1px solid var(--border)" }}>
           <input className="flex-1 bg-transparent text-sm outline-none"
             style={{ color: "var(--text-primary)" }}
-            placeholder="Search messages…"
+            placeholder="Поиск по сообщениям…"
             autoFocus
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); doSearch(e.target.value); }}
           />
           {searching && <span className="text-xs" style={{ color: "var(--text-muted)" }}>…</span>}
-          {searchQuery && <span className="text-xs" style={{ color: "var(--text-muted)" }}>{searchResults.length} found</span>}
+          {searchQuery && <span className="text-xs" style={{ color: "var(--text-muted)" }}>найдено: {searchResults.length}</span>}
         </div>
       )}
 
@@ -184,7 +188,7 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
           </svg>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold" style={{ color: "var(--accent-light)" }}>Pinned message</p>
+            <p className="text-xs font-semibold" style={{ color: "var(--accent-light)" }}>Закреплённое сообщение</p>
             <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{pinned.content || "[media]"}</p>
           </div>
         </div>
@@ -220,9 +224,9 @@ export default function ChatWindow({ chat, onBack, onChatDeleted, onMessagesRead
                 {searchMode ? "🔍" : "✉️"}
               </div>
               <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
-                {searchMode ? "No messages found" : "No messages yet"}
+                {searchMode ? "Сообщений не найдено" : "Нет сообщений"}
               </p>
-              {!searchMode && <p className="text-xs" style={{ color: "var(--text-muted)" }}>Say hello!</p>}
+              {!searchMode && <p className="text-xs" style={{ color: "var(--text-muted)" }}>Напишите первым!</p>}
             </div>
           )}
 

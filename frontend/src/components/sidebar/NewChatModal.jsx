@@ -74,8 +74,8 @@ export default function NewChatModal({ onClose, onCreated }) {
 
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>New Message</h3>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Find by @username</p>
+            <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Новое сообщение</h3>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Поиск по @никнейму</p>
           </div>
           <button onClick={onClose}
             className="w-8 h-8 rounded-2xl flex items-center justify-center text-sm transition-all active:scale-90"
@@ -91,7 +91,7 @@ export default function NewChatModal({ onClose, onCreated }) {
             ref={inputRef}
             className="input"
             style={{ paddingLeft: "1.75rem" }}
-            placeholder="username"
+            placeholder="никнейм"
             value={query.replace(/^@/, "")}
             onChange={e => search(e.target.value)}
             autoCapitalize="none" autoComplete="off"
@@ -105,7 +105,7 @@ export default function NewChatModal({ onClose, onCreated }) {
         {noResults && (
           <div className="rounded-2xl px-4 py-4 text-sm text-center animate-fade-in"
             style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
-            No users found
+            Пользователи не найдены
           </div>
         )}
 
@@ -144,7 +144,7 @@ export default function NewChatModal({ onClose, onCreated }) {
         {error && <p className="text-xs animate-fade-in" style={{ color: "#f87171" }}>{error}</p>}
 
         <button onClick={submit} disabled={loading || !selected} className="btn-primary">
-          {loading ? "Opening…" : selected ? `Message @${selected.username}` : "Select a user"}
+          {loading ? "Открываем…" : selected ? `Написать @${selected.username}` : "Выберите пользователя"}
         </button>
       </div>
     </div>

@@ -9,12 +9,15 @@ export default function ReplyBar({ replyTo, onCancel }) {
         borderLeft: "3px solid var(--accent)",
       }}
     >
+      <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0 fill-current" style={{ color: "var(--accent)" }}>
+        <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
+      </svg>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold truncate" style={{ color: "var(--accent-light)" }}>
-          ↩ @{replyTo.sender_username}
+          @{replyTo.sender_username}
         </p>
         <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
-          {replyTo.content}
+          {replyTo.content || "[медиа]"}
         </p>
       </div>
       <button
